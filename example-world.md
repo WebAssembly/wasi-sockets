@@ -992,39 +992,6 @@ be used.</p>
 </ul>
 <hr />
 <h3>Functions</h3>
-<h4><a name="bind"><code>bind: func</code></a></h4>
-<p>Bind the socket to a specific network on the provided IP address and port.</p>
-<p>If the IP address is zero (<code>0.0.0.0</code> in IPv4, <code>::</code> in IPv6), it is left to the implementation to decide which
-network interface(s) to bind to.
-If the TCP/UDP port is zero, the socket will be bound to a random free port.</p>
-<p>When a socket is not explicitly bound, the first invocation to a listen or connect operation will
-implicitly bind the socket.</p>
-<h1>Typical errors</h1>
-<ul>
-<li><code>address-family-mismatch</code>:   The <a href="#local_address"><code>local-address</code></a> has the wrong address family. (EINVAL)</li>
-<li><code>already-bound</code>:             The socket is already bound. (EINVAL)</li>
-<li><code>ephemeral-ports-exhausted</code>: No ephemeral ports available. (EADDRINUSE, ENOBUFS on Windows)</li>
-<li><code>address-in-use</code>:            Address is already in use. (EADDRINUSE)</li>
-<li><code>address-not-bindable</code>:      <a href="#local_address"><code>local-address</code></a> is not an address that the <a href="#network"><code>network</code></a> can bind to. (EADDRNOTAVAIL)</li>
-<li><code>concurrency-conflict</code>:      Another <a href="#bind"><code>bind</code></a>, <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
-</ul>
-<h1>References</h1>
-<ul>
-<li><a href="https://pubs.opengroup.org/onlinepubs/9699919799/functions/bind.html">https://pubs.opengroup.org/onlinepubs/9699919799/functions/bind.html</a></li>
-<li><a href="https://man7.org/linux/man-pages/man2/bind.2.html">https://man7.org/linux/man-pages/man2/bind.2.html</a></li>
-<li><a href="https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-bind">https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-bind</a></li>
-<li><a href="https://man.freebsd.org/cgi/man.cgi?query=bind&amp;sektion=2&amp;format=html">https://man.freebsd.org/cgi/man.cgi?query=bind&amp;sektion=2&amp;format=html</a></li>
-</ul>
-<h5>Params</h5>
-<ul>
-<li><a name="bind.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
-<li><a name="bind.network"><a href="#network"><code>network</code></a></a>: <a href="#network"><a href="#network"><code>network</code></a></a></li>
-<li><a name="bind.local_address"><a href="#local_address"><code>local-address</code></a></a>: <a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a></li>
-</ul>
-<h5>Return values</h5>
-<ul>
-<li><a name="bind.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
-</ul>
 <h4><a name="connect"><code>connect: func</code></a></h4>
 <p>Connect to a remote endpoint.</p>
 <p>On success:</p>
@@ -1041,11 +1008,10 @@ implicitly bind the socket.</p>
 <li><code>address-family-mismatch</code>:   The <a href="#remote_address"><code>remote-address</code></a> has the wrong address family. (EAFNOSUPPORT)</li>
 <li><code>invalid-remote-address</code>:    The IP address in <a href="#remote_address"><code>remote-address</code></a> is set to INADDR_ANY (<code>0.0.0.0</code> / <code>::</code>). (EADDRNOTAVAIL on Windows)</li>
 <li><code>invalid-remote-address</code>:    The port in <a href="#remote_address"><code>remote-address</code></a> is set to 0. (EADDRNOTAVAIL on Windows)</li>
-<li><code>already-attached</code>:          The socket is already attached to a different network. The <a href="#network"><code>network</code></a> passed to <a href="#connect"><code>connect</code></a> must be identical to the one passed to <a href="#bind"><code>bind</code></a>.</li>
 <li><code>already-connected</code>:         The socket is already in the Connection state. (EISCONN)</li>
 <li><code>already-listening</code>:         The socket is already in the Listener state. (EOPNOTSUPP, EINVAL on Windows)</li>
 <li><code>ephemeral-ports-exhausted</code>: Tried to perform an implicit bind, but there were no ephemeral ports available. (EADDRINUSE, EADDRNOTAVAIL on Linux, EAGAIN on BSD)</li>
-<li><code>concurrency-conflict</code>:      Another <a href="#bind"><code>bind</code></a>, <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
+<li><code>concurrency-conflict</code>:      Another <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
 </ul>
 <h1>References</h1>
 <ul>
@@ -1065,27 +1031,38 @@ implicitly bind the socket.</p>
 <li><a name="connect.0"></a> result&lt;(<a href="#input_stream"><a href="#input_stream"><code>input-stream</code></a></a>, <a href="#output_stream"><a href="#output_stream"><code>output-stream</code></a></a>), <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
 <h4><a name="listen"><code>listen: func</code></a></h4>
-<p>Start listening for new connections.</p>
+<p>Bind the socket to a specific network on the provided IP address &amp; port and start listening for new connections.</p>
+<p>This is the POSIX equivalent of calling <a href="#bind"><code>bind</code></a> and <a href="#listen"><code>listen</code></a> consecutively.</p>
+<p>If the IP address is zero (<code>0.0.0.0</code> in IPv4, <code>::</code> in IPv6), it is left to the implementation to decide which
+network interface(s) to bind to.
+If the TCP/UDP port is zero, the socket will be bound to a random free port.</p>
 <p>Transitions the socket into the Listener state.</p>
 <h1>Typical errors</h1>
 <ul>
-<li><code>already-attached</code>:          The socket is already attached to a different network. The <a href="#network"><code>network</code></a> passed to <a href="#listen"><code>listen</code></a> must be identical to the one passed to <a href="#bind"><code>bind</code></a>.</li>
+<li><code>address-family-mismatch</code>:   The <a href="#local_address"><code>local-address</code></a> has the wrong address family. (EINVAL)</li>
 <li><code>already-connected</code>:         The socket is already in the Connection state. (EISCONN, EINVAL on BSD)</li>
 <li><code>already-listening</code>:         The socket is already in the Listener state.</li>
-<li><code>ephemeral-ports-exhausted</code>: Tried to perform an implicit bind, but there were no ephemeral ports available. (EADDRINUSE)</li>
-<li><code>concurrency-conflict</code>:      Another <a href="#bind"><code>bind</code></a>, <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EINVAL on BSD)</li>
+<li><code>ephemeral-ports-exhausted</code>: No ephemeral ports available. (EADDRINUSE, ENOBUFS on Windows)</li>
+<li><code>address-in-use</code>:            Address is already in use. (EADDRINUSE)</li>
+<li><code>address-not-bindable</code>:      <a href="#local_address"><code>local-address</code></a> is not an address that the <a href="#network"><code>network</code></a> can bind to. (EADDRNOTAVAIL)</li>
+<li><code>concurrency-conflict</code>:      Another <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY, EINVAL on BSD)</li>
 </ul>
 <h1>References</h1>
 <ul>
+<li><a href="https://pubs.opengroup.org/onlinepubs/9699919799/functions/bind.html">https://pubs.opengroup.org/onlinepubs/9699919799/functions/bind.html</a></li>
 <li><a href="https://pubs.opengroup.org/onlinepubs/9699919799/functions/listen.html">https://pubs.opengroup.org/onlinepubs/9699919799/functions/listen.html</a></li>
+<li><a href="https://man7.org/linux/man-pages/man2/bind.2.html">https://man7.org/linux/man-pages/man2/bind.2.html</a></li>
 <li><a href="https://man7.org/linux/man-pages/man2/listen.2.html">https://man7.org/linux/man-pages/man2/listen.2.html</a></li>
+<li><a href="https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-bind">https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-bind</a></li>
 <li><a href="https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-listen">https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-listen</a></li>
+<li><a href="https://man.freebsd.org/cgi/man.cgi?query=bind&amp;sektion=2&amp;format=html">https://man.freebsd.org/cgi/man.cgi?query=bind&amp;sektion=2&amp;format=html</a></li>
 <li><a href="https://man.freebsd.org/cgi/man.cgi?query=listen&amp;sektion=2">https://man.freebsd.org/cgi/man.cgi?query=listen&amp;sektion=2</a></li>
 </ul>
 <h5>Params</h5>
 <ul>
 <li><a name="listen.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
 <li><a name="listen.network"><a href="#network"><code>network</code></a></a>: <a href="#network"><a href="#network"><code>network</code></a></a></li>
+<li><a name="listen.local_address"><a href="#local_address"><code>local-address</code></a></a>: <a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a></li>
 </ul>
 <h5>Return values</h5>
 <ul>
@@ -1138,7 +1115,7 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <li><a name="local_address.0"></a> result&lt;<a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
 <h4><a name="remote_address"><code>remote-address: func</code></a></h4>
-<p>Get the bound remote address.</p>
+<p>Get the connected remote address.</p>
 <h1>Typical errors</h1>
 <ul>
 <li><code>not-connected</code>: The socket is not connected to a remote address. (ENOTCONN)</li>
@@ -1177,7 +1154,7 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <li><code>ipv6-only-operation</code>:  (get/set) <code>this</code> socket is an IPv4 socket.</li>
 <li><code>already-bound</code>:        (set) The socket is already bound.</li>
 <li><code>not-supported</code>:        (set) Host does not support dual-stack sockets. (Implementations are not required to.)</li>
-<li><code>concurrency-conflict</code>: (set) A <a href="#bind"><code>bind</code></a>, <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
+<li><code>concurrency-conflict</code>: (set) A <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
 </ul>
 <h5>Params</h5>
 <ul>
@@ -1202,7 +1179,7 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <h1>Typical errors</h1>
 <ul>
 <li><code>already-connected</code>:    (set) The socket is already in the Connection state.</li>
-<li><code>concurrency-conflict</code>: (set) A <a href="#bind"><code>bind</code></a>, <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
+<li><code>concurrency-conflict</code>: (set) A <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
 </ul>
 <h5>Params</h5>
 <ul>
@@ -1217,7 +1194,7 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <p>Equivalent to the SO_KEEPALIVE socket option.</p>
 <h1>Typical errors</h1>
 <ul>
-<li><code>concurrency-conflict</code>: (set) A <a href="#bind"><code>bind</code></a>, <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
+<li><code>concurrency-conflict</code>: (set) A <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
 </ul>
 <h5>Params</h5>
 <ul>
@@ -1241,7 +1218,7 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <p>Equivalent to the TCP_NODELAY socket option.</p>
 <h1>Typical errors</h1>
 <ul>
-<li><code>concurrency-conflict</code>: (set) A <a href="#bind"><code>bind</code></a>, <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
+<li><code>concurrency-conflict</code>: (set) A <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
 </ul>
 <h5>Params</h5>
 <ul>
@@ -1267,7 +1244,7 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <ul>
 <li><code>already-connected</code>:    (set) The socket is already in the Connection state.</li>
 <li><code>already-listening</code>:    (set) The socket is already in the Listener state.</li>
-<li><code>concurrency-conflict</code>: (set) A <a href="#bind"><code>bind</code></a>, <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
+<li><code>concurrency-conflict</code>: (set) A <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
 </ul>
 <h5>Params</h5>
 <ul>
@@ -1299,7 +1276,7 @@ for internal metadata structures.</p>
 <ul>
 <li><code>already-connected</code>:    (set) The socket is already in the Connection state.</li>
 <li><code>already-listening</code>:    (set) The socket is already in the Listener state.</li>
-<li><code>concurrency-conflict</code>: (set) A <a href="#bind"><code>bind</code></a>, <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
+<li><code>concurrency-conflict</code>: (set) A <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
 </ul>
 <h5>Params</h5>
 <ul>
@@ -1347,7 +1324,7 @@ the API consumer is expected to call <a href="#subscribe"><code>subscribe</code>
 They're planned to be removed when <code>future</code> is natively supported in Preview3.</p>
 <h1>Typical errors</h1>
 <ul>
-<li><code>concurrency-conflict</code>: (set) A <a href="#bind"><code>bind</code></a>, <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
+<li><code>concurrency-conflict</code>: (set) A <a href="#connect"><code>connect</code></a> or <a href="#listen"><code>listen</code></a> operation is already in progress. (EALREADY)</li>
 </ul>
 <h5>Params</h5>
 <ul>
@@ -1439,7 +1416,7 @@ operations on the <a href="#output_stream"><code>output-stream</code></a> associ
 <p>Create a new TCP socket.</p>
 <p>Similar to <code>socket(AF_INET or AF_INET6, SOCK_STREAM, IPPROTO_TCP)</code> in POSIX.</p>
 <p>This function does not require a network capability handle. This is considered to be safe because
-at time of creation, the socket is not bound to any <a href="#network"><code>network</code></a> yet. Up to the moment <a href="#bind"><code>bind</code></a>/<a href="#listen"><code>listen</code></a>/<a href="#connect"><code>connect</code></a>
+at time of creation, the socket is not bound to any <a href="#network"><code>network</code></a> yet. Up to the moment <a href="#listen"><code>listen</code></a>/<a href="#connect"><code>connect</code></a>
 is called, the socket is effectively an in-memory configuration object, unable to communicate with the outside world.</p>
 <h1>Typical errors</h1>
 <ul>
