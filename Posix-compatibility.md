@@ -39,11 +39,11 @@ Not included in proposal. WASI has no concept of UNIX-style processes.
 - UDP: [`udp::start-connect`](udp) & [`udp::finish-connect`](udp)
 
 ### `bind`
-- TCP: [`tcp::start-bind`](tcp) & [`tcp::finish-bind`](tcp)
-- UDP: [`udp::start-bind`](udp) & [`udp::finish-bind`](udp)
+- TCP: [`tcp::bind`](tcp)
+- UDP: [`udp::bind`](udp)
 
 ### `listen`
-- TCP: [`tcp::start-listen`](tcp) & [`tcp::finish-listen`](tcp). The `backlog` parameter has been split out into a distinct function [`tcp::set-listen-backlog-size`](tcp) ([See #34](https://github.com/WebAssembly/wasi-sockets/issues/34)).
+- TCP: [`tcp::listen`](tcp). The `backlog` parameter has been split out into a distinct function [`tcp::set-listen-backlog-size`](tcp) ([See #34](https://github.com/WebAssembly/wasi-sockets/issues/34)).
 - UDP: N/A
 
 ### `accept`, `accept4` (non-standard)

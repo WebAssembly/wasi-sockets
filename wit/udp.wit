@@ -32,12 +32,10 @@ interface udp {
 	/// 
 	/// Unlike in POSIX, this function is async. This enables interactive WASI hosts to inject permission prompts.
 	/// 
-	/// # Typical `start` errors
+	/// # Typical errors
 	/// - `address-family-mismatch`:   The `local-address` has the wrong address family. (EINVAL)
 	/// - `already-bound`:             The socket is already bound. (EINVAL)
-	/// - `concurrency-conflict`:      Another `bind` or `connect` operation is already in progress. (EALREADY)
-	/// 
-	/// # Typical `finish` errors
+	/// - `already-connected`:         The socket is already connected. (EINVAL)
 	/// - `ephemeral-ports-exhausted`: No ephemeral ports available. (EADDRINUSE, ENOBUFS on Windows)
 	/// - `address-in-use`:            Address is already in use. (EADDRINUSE)
 	/// - `address-not-bindable`:      `local-address` is not an address that the `network` can bind to. (EADDRNOTAVAIL)
@@ -49,8 +47,7 @@ interface udp {
 	/// - <https://man7.org/linux/man-pages/man2/bind.2.html>
 	/// - <https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-bind>
 	/// - <https://man.freebsd.org/cgi/man.cgi?query=bind&sektion=2&format=html>
-	start-bind: func(this: udp-socket, network: network, local-address: ip-socket-address) -> result<_, error-code>
-	finish-bind: func(this: udp-socket) -> result<_, error-code>
+	bind: func(this: udp-socket, network: network, local-address: ip-socket-address) -> result<_, error-code>
 
 	/// Set the destination address.
 	/// 
@@ -69,7 +66,7 @@ interface udp {
 	/// - `invalid-remote-address`:    The IP address in `remote-address` is set to INADDR_ANY (`0.0.0.0` / `::`). (EDESTADDRREQ, EADDRNOTAVAIL)
 	/// - `invalid-remote-address`:    The port in `remote-address` is set to 0. (EDESTADDRREQ, EADDRNOTAVAIL)
 	/// - `already-attached`:          The socket is already bound to a different network. The `network` passed to `connect` must be identical to the one passed to `bind`.
-	/// - `concurrency-conflict`:      Another `bind` or `connect` operation is already in progress. (EALREADY)
+	/// - `already-connected`:         The socket is already in the Connection state. (EISCONN)
 	/// 
 	/// # Typical `finish` errors
 	/// - `ephemeral-ports-exhausted`: Tried to perform an implicit bind, but there were no ephemeral ports available. (EADDRINUSE, EADDRNOTAVAIL on Linux, EAGAIN on BSD)
@@ -177,15 +174,14 @@ interface udp {
 	/// # Typical errors
 	/// - `ipv6-only-operation`:  (get/set) `this` socket is an IPv4 socket.
 	/// - `already-bound`:        (set) The socket is already bound.
+	/// - `already-connected`:    (set) The socket is already connected.
 	/// - `not-supported`:        (set) Host does not support dual-stack sockets. (Implementations are not required to.)
-	/// - `concurrency-conflict`: (set) Another `bind` or `connect` operation is already in progress. (EALREADY)
 	ipv6-only: func(this: udp-socket) -> result<bool, error-code>
 	set-ipv6-only: func(this: udp-socket, value: bool) -> result<_, error-code>
 
 	/// Equivalent to the IP_TTL & IPV6_UNICAST_HOPS socket options.
 	/// 
 	/// # Typical errors
-	/// - `concurrency-conflict`: (set) Another `bind` or `connect` operation is already in progress. (EALREADY)
 	unicast-hop-limit: func(this: udp-socket) -> result<u8, error-code>
 	set-unicast-hop-limit: func(this: udp-socket, value: u8) -> result<_, error-code>
 
@@ -203,7 +199,6 @@ interface udp {
 	/// Equivalent to the SO_RCVBUF and SO_SNDBUF socket options.
 	/// 
 	/// # Typical errors
-	/// - `concurrency-conflict`: (set) Another `bind` or `connect` operation is already in progress. (EALREADY)
 	receive-buffer-size: func(this: udp-socket) -> result<u64, error-code>
 	set-receive-buffer-size: func(this: udp-socket, value: u64) -> result<_, error-code>
 	send-buffer-size: func(this: udp-socket) -> result<u64, error-code>

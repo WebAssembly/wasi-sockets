@@ -48,9 +48,6 @@ interface network {
 		/// The operation timed out before it could finish completely.
 		timeout,
 
-		/// This operation is incompatible with another asynchronous operation that is already in progress.
-		concurrency-conflict,
-
 		/// Trying to finish an asynchronous operation that:
 		/// - has not been started yet, or:
 		/// - was already finished by a previous `finish-*` call.
@@ -94,7 +91,9 @@ interface network {
 		/// The socket is already bound.
 		already-bound,
 
-		/// The socket is already in the Connection state.
+		/// `start-connect` has been called on the socket, so it's either in the
+		/// progress of establishing a connection, or it's already in the
+                /// Connection state.
 		already-connected,
 
 		/// The socket is not bound to any local address.
