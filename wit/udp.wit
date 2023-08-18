@@ -9,8 +9,16 @@ interface udp {
 
 
 	record datagram {
-		data: list<u8>, // Theoretical max size: ~64 KiB. In practice, typically less than 1500 bytes.
-		remote-address: ip-socket-address,
+		/// The payload.
+		/// 
+		/// Theoretical max size: ~64 KiB. In practice, typically less than 1500 bytes.
+		data: list<u8>,
+
+		/// The peer address.
+		/// 
+		/// Equivalent to the `src_addr` out parameter of `recvfrom` and the `msghdr::msg_name` out parameter of `recvmsg`.
+		/// Equivalent to the `dest_addr` parameter of `sendto` and the `msghdr::msg_name` parameter of `sendmsg`.
+		remote-address: option<ip-socket-address>,
 
 		/// Possible future additions:
 		/// local-address: ip-socket-address, // IP_PKTINFO / IP_RECVDSTADDR / IPV6_PKTINFO
@@ -117,14 +125,15 @@ interface udp {
 	/// 
 	/// If the input list is empty, the function returns `ok(0)`.
 	/// 
-	/// The remote address option is required. To send a message to the "connected" peer,
-	/// call `remote-address` to get their address.
+	/// On "connected" sockets, the `remote-address` is optional.
+	/// This is equivalent to `send` in POSIX or `sendmsg` without a remote address.
 	/// 
 	/// # Typical errors
 	/// - `address-family-mismatch`: The `remote-address` has the wrong address family. (EAFNOSUPPORT)
 	/// - `invalid-remote-address`:  The IP address in `remote-address` is set to INADDR_ANY (`0.0.0.0` / `::`). (EDESTADDRREQ, EADDRNOTAVAIL)
 	/// - `invalid-remote-address`:  The port in `remote-address` is set to 0. (EDESTADDRREQ, EADDRNOTAVAIL)
-	/// - `already-connected`:       The socket is in "connected" mode and the `datagram.remote-address` does not match the address passed to `connect`. (EISCONN)
+	/// - `already-connected`:       The socket is in "connected" mode and `remote-address` is `some` value that does not match the address passed to `connect`. (EISCONN)
+	/// - `not-connected`:           The socket is not "connected" and no value for `remote-address` was provided. (EDESTADDRREQ)
 	/// - `not-bound`:               The socket is not bound to any local address. Unlike POSIX, this function does not perform an implicit bind.
 	/// - `remote-unreachable`:      The remote address is not reachable. (ECONNREFUSED, ECONNRESET, ENETRESET on Windows, EHOSTUNREACH, EHOSTDOWN, ENETUNREACH, ENETDOWN)
 	/// - `datagram-too-large`:      The datagram is too large. (EMSGSIZE)
