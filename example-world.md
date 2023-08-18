@@ -326,7 +326,7 @@ mean &quot;ready&quot;.</p>
 <h5>Record Fields</h5>
 <ul>
 <li><a name="datagram.data"><code>data</code></a>: list&lt;<code>u8</code>&gt;</li>
-<li><a name="datagram.remote_address"><a href="#remote_address"><code>remote-address</code></a></a>: <a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a></li>
+<li><a name="datagram.remote_address"><a href="#remote_address"><code>remote-address</code></a></a>: option&lt;<a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a>&gt;</li>
 </ul>
 <hr />
 <h3>Functions</h3>
@@ -466,14 +466,13 @@ returns how many messages were actually sent (or queued for sending).</p>
 sending each individual datagram until either the end of the list has been reached or the first error occurred.
 If at least one datagram has been sent successfully, this function never returns an error.</p>
 <p>If the input list is empty, the function returns <code>ok(0)</code>.</p>
-<p>The remote address option is required. To send a message to the &quot;connected&quot; peer,
-call <a href="#remote_address"><code>remote-address</code></a> to get their address.</p>
 <h1>Typical errors</h1>
 <ul>
 <li><code>address-family-mismatch</code>: The <a href="#remote_address"><code>remote-address</code></a> has the wrong address family. (EAFNOSUPPORT)</li>
 <li><code>invalid-remote-address</code>:  The IP address in <a href="#remote_address"><code>remote-address</code></a> is set to INADDR_ANY (<code>0.0.0.0</code> / <code>::</code>). (EDESTADDRREQ, EADDRNOTAVAIL)</li>
 <li><code>invalid-remote-address</code>:  The port in <a href="#remote_address"><code>remote-address</code></a> is set to 0. (EDESTADDRREQ, EADDRNOTAVAIL)</li>
-<li><code>already-connected</code>:       The socket is in &quot;connected&quot; mode and the <code>datagram.remote-address</code> does not match the address passed to <code>connect</code>. (EISCONN)</li>
+<li><code>already-connected</code>:       The socket is in &quot;connected&quot; mode and <a href="#remote_address"><code>remote-address</code></a> is <code>some</code> value that does not match the address passed to <code>connect</code>. (EISCONN)</li>
+<li><code>not-connected</code>:           The socket is not &quot;connected&quot; and no value for <a href="#remote_address"><code>remote-address</code></a> was provided. (EDESTADDRREQ)</li>
 <li><code>not-bound</code>:               The socket is not bound to any local address. Unlike POSIX, this function does not perform an implicit bind.</li>
 <li><code>remote-unreachable</code>:      The remote address is not reachable. (ECONNREFUSED, ECONNRESET, ENETRESET on Windows, EHOSTUNREACH, EHOSTDOWN, ENETUNREACH, ENETDOWN)</li>
 <li><code>datagram-too-large</code>:      The datagram is too large. (EMSGSIZE)</li>
