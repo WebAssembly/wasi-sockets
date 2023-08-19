@@ -325,8 +325,33 @@ mean &quot;ready&quot;.</p>
 <h4><a name="datagram"><code>record datagram</code></a></h4>
 <h5>Record Fields</h5>
 <ul>
-<li><a name="datagram.data"><code>data</code></a>: list&lt;<code>u8</code>&gt;</li>
-<li><a name="datagram.remote_address"><a href="#remote_address"><code>remote-address</code></a></a>: option&lt;<a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a>&gt;</li>
+<li>
+<p><a name="datagram.data"><code>data</code></a>: list&lt;<code>u8</code>&gt;</p>
+<p>The payload.
+<p>Theoretical max size: ~64 KiB. In practice, typically less than 1500 bytes.</p>
+</li>
+<li>
+<p><a name="datagram.remote_address"><a href="#remote_address"><code>remote-address</code></a></a>: option&lt;<a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a>&gt;</p>
+<p>The peer address.
+<p>Equivalent to the <code>src_addr</code> out parameter of <code>recvfrom</code> and the <code>msghdr::msg_name</code> out parameter of <code>recvmsg</code>.
+Equivalent to the <code>dest_addr</code> parameter of <code>sendto</code> and the <code>msghdr::msg_name</code> parameter of <code>sendmsg</code>.</p>
+</li>
+<li>
+<p><a name="datagram.local_address"><a href="#local_address"><code>local-address</code></a></a>: option&lt;<a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a>&gt;</p>
+<p>The local address.
+<p>Equivalent to the IP_PKTINFO &amp; IPV6_PKTINFO ancillary messages.</p>
+</li>
+<li>
+<p><a name="datagram.traffic_class"><a href="#traffic_class"><code>traffic-class</code></a></a>: option&lt;<code>u8</code>&gt;</p>
+<p>The value of the Traffic Class field of the IP packet. (Also known as "Type of Service (TOS)" in IPv4)
+<p>This value is composed of the DSCP (6 high bits) + ECN (2 low bits)</p>
+<p>Equivalent to the IP_TOS &amp; IPV6_TCLASS ancillary messages.</p>
+</li>
+<li>
+<p><a name="datagram.hop_limit"><a href="#hop_limit"><code>hop-limit</code></a></a>: option&lt;<code>u8</code>&gt;</p>
+<p>The value of the Hop Limit field of the IP packet. (Also known as "Time To Live (TTL)" in IPv4)
+<p>Equivalent to the IP_TTL &amp; IPV6_HOPLIMIT ancillary messages.</p>
+</li>
 </ul>
 <hr />
 <h3>Functions</h3>
@@ -432,6 +457,12 @@ If the TCP/UDP port is zero, the socket will be bound to a random free port.</p>
 <p>This function attempts to receive up to <code>max-results</code> datagrams on the socket without blocking.
 The returned list may contain fewer elements than requested, but never more.
 If <code>max-results</code> is 0, this function returns successfully with an empty list.</p>
+<p>The closest equivalent to this function is Linux' <code>recvmmsg</code> function while having the following options enabled:</p>
+<ul>
+<li>IP_PKTINFO/IP_RECVDSTADDR or IPV6_RECVPKTINFO</li>
+<li>IP_RECVTOS or IPV6_RECVTCLASS</li>
+<li>IP_RECVTTL or IPV6_RECVHOPLIMIT</li>
+</ul>
 <h1>Typical errors</h1>
 <ul>
 <li><code>not-bound</code>:          The socket is not bound to any local address. (EINVAL)</li>
@@ -466,6 +497,19 @@ returns how many messages were actually sent (or queued for sending).</p>
 sending each individual datagram until either the end of the list has been reached or the first error occurred.
 If at least one datagram has been sent successfully, this function never returns an error.</p>
 <p>If the input list is empty, the function returns <code>ok(0)</code>.</p>
+<p>Most <a href="#datagram"><code>datagram</code></a> fields are optional. When <code>none</code> is passed,</p>
+<ul>
+<li><a href="#remote_address"><code>remote-address</code></a>: The packet will be sent to the connected <a href="#remote_address"><code>remote-address</code></a>. Or fail if not connected.</li>
+<li><a href="#local_address"><code>local-address</code></a>: The system will choose a suitable source address.</li>
+<li><a href="#traffic_class"><code>traffic-class</code></a>: The value of the <a href="#traffic_class"><code>traffic-class</code></a> socket option (below) will be used.</li>
+<li><a href="#hop_limit"><code>hop-limit</code></a>: The value of the <a href="#unicast_hop_limit"><code>unicast-hop-limit</code></a> socket option (below) will be used.</li>
+</ul>
+<p>The closest equivalent to this function is Linux' <code>sendmmsg</code> function with the following ancillary messages:</p>
+<ul>
+<li>IP_PKTINFO or IPV6_PKTINFO</li>
+<li>IP_TOS or IPV6_TCLASS</li>
+<li>IP_TTL or IPV6_HOPLIMIT</li>
+</ul>
 <h1>Typical errors</h1>
 <ul>
 <li><code>address-family-mismatch</code>: The <a href="#remote_address"><code>remote-address</code></a> has the wrong address family. (EAFNOSUPPORT)</li>
@@ -602,6 +646,54 @@ If at least one datagram has been sent successfully, this function never returns
 <h5>Return values</h5>
 <ul>
 <li><a name="set_unicast_hop_limit.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="traffic_class"><code>traffic-class: func</code></a></h4>
+<p>Equivalent to the IP_TOS &amp; IPV6_TCLASS socket options.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="traffic_class.this"><code>this</code></a>: <a href="#udp_socket"><a href="#udp_socket"><code>udp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="traffic_class.0"></a> result&lt;<code>u8</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_traffic_class"><code>set-traffic-class: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_traffic_class.this"><code>this</code></a>: <a href="#udp_socket"><a href="#udp_socket"><code>udp-socket</code></a></a></li>
+<li><a name="set_traffic_class.value"><code>value</code></a>: <code>u8</code></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_traffic_class.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="dont_fragment"><code>dont-fragment: func</code></a></h4>
+<p>Equivalent to the IP_DONTFRAG &amp; IPV6_DONTFRAG socket options.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="dont_fragment.this"><code>this</code></a>: <a href="#udp_socket"><a href="#udp_socket"><code>udp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="dont_fragment.0"></a> result&lt;<code>u8</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_dont_fragment"><code>set-dont-fragment: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_dont_fragment.this"><code>this</code></a>: <a href="#udp_socket"><a href="#udp_socket"><code>udp-socket</code></a></a></li>
+<li><a name="set_dont_fragment.value"><code>value</code></a>: <code>u8</code></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_dont_fragment.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
 <h4><a name="receive_buffer_size"><code>receive-buffer-size: func</code></a></h4>
 <p>The kernel buffer space reserved for sends/receives on this socket.</p>
@@ -1011,6 +1103,12 @@ be used.</p>
 <p>Similar to `SHUT_RDWR` in POSIX.
 </li>
 </ul>
+<h4><a name="duration"><code>type duration</code></a></h4>
+<p><code>u64</code></p>
+<p>Amount of time in nanoseconds.
+This is a placeholder type, in the hope that WASI someday will have a central package for time-related types.
+`wasi-clocks` currently doesn't have a sufficient type.
+To accomodate the possibility that an eventual Duration may be signed, all wasi-socket implementations must trap if they encounter a duration >= 2^63
 <hr />
 <h3>Functions</h3>
 <h4><a name="start_bind"><code>start-bind: func</code></a></h4>
@@ -1062,7 +1160,9 @@ implicitly bind the socket.</p>
 <li><a name="finish_bind.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
 <h4><a name="start_connect"><code>start-connect: func</code></a></h4>
-<p>Connect to a remote endpoint.</p>
+<p>Connect to a remote endpoint and optionally send some data.</p>
+<p>This operation does not finish until all initial data has been written, or an error has occurred.
+If <a href="#fast_open"><code>fast-open</code></a> is enabled, some of <code>initial-data</code> may be sent as part of the opening handshake.</p>
 <p>On success:</p>
 <ul>
 <li>the socket is transitioned into the Connection state</li>
@@ -1100,6 +1200,7 @@ implicitly bind the socket.</p>
 <li><a name="start_connect.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
 <li><a name="start_connect.network"><a href="#network"><code>network</code></a></a>: <a href="#network"><a href="#network"><code>network</code></a></a></li>
 <li><a name="start_connect.remote_address"><a href="#remote_address"><code>remote-address</code></a></a>: <a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a></li>
+<li><a name="start_connect.initial_data"><code>initial-data</code></a>: list&lt;<code>u8</code>&gt;</li>
 </ul>
 <h5>Return values</h5>
 <ul>
@@ -1227,6 +1328,17 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <ul>
 <li><a name="remote_address.0"></a> result&lt;<a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
+<h4><a name="is_listening"><code>is-listening: func</code></a></h4>
+<p>Whether the socket is listening for new connections.</p>
+<p>Equivalent to the SO_ACCEPTCONN socket option.</p>
+<h5>Params</h5>
+<ul>
+<li><a name="is_listening.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="is_listening.0"></a> <code>bool</code></li>
+</ul>
 <h4><a name="address_family"><code>address-family: func</code></a></h4>
 <p>Whether this is a IPv4 or IPv6 socket.</p>
 <p>Equivalent to the SO_DOMAIN socket option.</p>
@@ -1266,13 +1378,22 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <ul>
 <li><a name="set_ipv6_only.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
-<h4><a name="set_listen_backlog_size"><code>set-listen-backlog-size: func</code></a></h4>
+<h4><a name="listen_backlog_size"><code>listen-backlog-size: func</code></a></h4>
 <p>Hints the desired listen queue size. Implementations are free to ignore this.</p>
 <h1>Typical errors</h1>
 <ul>
 <li><code>already-connected</code>:    (set) The socket is already in the Connection state.</li>
 <li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
 </ul>
+<h5>Params</h5>
+<ul>
+<li><a name="listen_backlog_size.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="listen_backlog_size.0"></a> result&lt;<code>u64</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_listen_backlog_size"><code>set-listen-backlog-size: func</code></a></h4>
 <h5>Params</h5>
 <ul>
 <li><a name="set_listen_backlog_size.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
@@ -1306,6 +1427,78 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <ul>
 <li><a name="set_keep_alive.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
+<h4><a name="keep_alive_idle_time"><code>keep-alive-idle-time: func</code></a></h4>
+<p>Equivalent to the TCP_KEEPIDLE socket option.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="keep_alive_idle_time.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="keep_alive_idle_time.0"></a> result&lt;<a href="#duration"><a href="#duration"><code>duration</code></a></a>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_keep_alive_idle_time"><code>set-keep-alive-idle-time: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_keep_alive_idle_time.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_keep_alive_idle_time.value"><code>value</code></a>: <a href="#duration"><a href="#duration"><code>duration</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_keep_alive_idle_time.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="keep_alive_interval"><code>keep-alive-interval: func</code></a></h4>
+<p>Equivalent to the TCP_KEEPINTVL socket option.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="keep_alive_interval.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="keep_alive_interval.0"></a> result&lt;<a href="#duration"><a href="#duration"><code>duration</code></a></a>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_keep_alive_interval"><code>set-keep-alive-interval: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_keep_alive_interval.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_keep_alive_interval.value"><code>value</code></a>: <a href="#duration"><a href="#duration"><code>duration</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_keep_alive_interval.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="keep_alive_count"><code>keep-alive-count: func</code></a></h4>
+<p>Equivalent to the TCP_KEEPCNT socket option.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="keep_alive_count.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="keep_alive_count.0"></a> result&lt;<code>u32</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_keep_alive_count"><code>set-keep-alive-count: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_keep_alive_count.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_keep_alive_count.value"><code>value</code></a>: <code>u32</code></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_keep_alive_count.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
 <h4><a name="no_delay"><code>no-delay: func</code></a></h4>
 <p>Equivalent to the TCP_NODELAY socket option.</p>
 <h1>Typical errors</h1>
@@ -1330,7 +1523,31 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <ul>
 <li><a name="set_no_delay.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
-<h4><a name="unicast_hop_limit"><code>unicast-hop-limit: func</code></a></h4>
+<h4><a name="no_push"><code>no-push: func</code></a></h4>
+<p>Equivalent to the TCP_CORK/TCP_NOPUSH socket option.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="no_push.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="no_push.0"></a> result&lt;<code>bool</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_no_push"><code>set-no-push: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_no_push.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_no_push.value"><code>value</code></a>: <code>bool</code></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_no_push.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="hop_limit"><code>hop-limit: func</code></a></h4>
 <p>Equivalent to the IP_TTL &amp; IPV6_UNICAST_HOPS socket options.</p>
 <h1>Typical errors</h1>
 <ul>
@@ -1340,21 +1557,74 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 </ul>
 <h5>Params</h5>
 <ul>
-<li><a name="unicast_hop_limit.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="hop_limit.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
 </ul>
 <h5>Return values</h5>
 <ul>
-<li><a name="unicast_hop_limit.0"></a> result&lt;<code>u8</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+<li><a name="hop_limit.0"></a> result&lt;<code>u8</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
-<h4><a name="set_unicast_hop_limit"><code>set-unicast-hop-limit: func</code></a></h4>
+<h4><a name="set_hop_limit"><code>set-hop-limit: func</code></a></h4>
 <h5>Params</h5>
 <ul>
-<li><a name="set_unicast_hop_limit.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
-<li><a name="set_unicast_hop_limit.value"><code>value</code></a>: <code>u8</code></li>
+<li><a name="set_hop_limit.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_hop_limit.value"><code>value</code></a>: <code>u8</code></li>
 </ul>
 <h5>Return values</h5>
 <ul>
-<li><a name="set_unicast_hop_limit.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+<li><a name="set_hop_limit.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="traffic_class"><code>traffic-class: func</code></a></h4>
+<p>Equivalent to the IP_TOS &amp; IPV6_TCLASS socket options.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>already-connected</code>:    (set) The socket is already in the Connection state.</li>
+<li><code>already-listening</code>:    (set) The socket is already in the Listener state.</li>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="traffic_class.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="traffic_class.0"></a> result&lt;<code>u8</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_traffic_class"><code>set-traffic-class: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_traffic_class.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_traffic_class.value"><code>value</code></a>: <code>u8</code></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_traffic_class.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="fast_open"><code>fast-open: func</code></a></h4>
+<p>Enable TCP Fast Open (TFO).</p>
+<p>Equivalent to the TCP_FASTOPEN socket options.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>already-connected</code>:    (set) The socket is already in the Connection state.</li>
+<li><code>already-listening</code>:    (set) The socket is already in the Listener state.</li>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="fast_open.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="fast_open.0"></a> result&lt;<code>bool</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_fast_open"><code>set-fast-open: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_fast_open.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_fast_open.value"><code>value</code></a>: <code>bool</code></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_fast_open.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
 <h4><a name="receive_buffer_size"><code>receive-buffer-size: func</code></a></h4>
 <p>The kernel buffer space reserved for sends/receives on this socket.</p>

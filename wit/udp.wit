@@ -9,15 +9,33 @@ interface udp {
 
 
 	record datagram {
-		data: list<u8>, // Theoretical max size: ~64 KiB. In practice, typically less than 1500 bytes.
+		/// The payload.
+		/// 
+		/// Theoretical max size: ~64 KiB. In practice, typically less than 1500 bytes.
+		data: list<u8>,
+
+		/// The peer address.
+		/// 
+		/// Equivalent to the `src_addr` out parameter of `recvfrom` and the `msghdr::msg_name` out parameter of `recvmsg`.
+		/// Equivalent to the `dest_addr` parameter of `sendto` and the `msghdr::msg_name` parameter of `sendmsg`.
 		remote-address: option<ip-socket-address>,
 
-		/// Possible future additions:
-		/// local-address: ip-socket-address, // IP_PKTINFO / IP_RECVDSTADDR / IPV6_PKTINFO
-		/// local-interface: u32, // IP_PKTINFO / IP_RECVIF
-		/// ttl: u8, // IP_RECVTTL
-		/// dscp: u6, // IP_RECVTOS
-		/// ecn: u2, // IP_RECVTOS
+		/// The local address.
+		/// 
+		/// Equivalent to the IP_PKTINFO & IPV6_PKTINFO ancillary messages.
+		local-address: option<ip-socket-address>,
+
+		/// The value of the Traffic Class field of the IP packet. (Also known as "Type of Service (TOS)" in IPv4)
+		/// 
+		/// This value is composed of the DSCP (6 high bits) + ECN (2 low bits)
+		/// 
+		/// Equivalent to the IP_TOS & IPV6_TCLASS ancillary messages.
+		traffic-class: option<u8>,
+
+		/// The value of the Hop Limit field of the IP packet. (Also known as "Time To Live (TTL)" in IPv4)
+		/// 
+		/// Equivalent to the IP_TTL & IPV6_HOPLIMIT ancillary messages.
+		hop-limit: option<u8>,
 	}
 
 
@@ -90,6 +108,11 @@ interface udp {
 	/// The returned list may contain fewer elements than requested, but never more.
 	/// If `max-results` is 0, this function returns successfully with an empty list.
 	/// 
+	/// The closest equivalent to this function is Linux' `recvmmsg` function while having the following options enabled:
+	/// - IP_PKTINFO/IP_RECVDSTADDR or IPV6_RECVPKTINFO
+	/// - IP_RECVTOS or IPV6_RECVTCLASS
+	/// - IP_RECVTTL or IPV6_RECVHOPLIMIT
+	/// 
 	/// # Typical errors
 	/// - `not-bound`:          The socket is not bound to any local address. (EINVAL)
 	/// - `remote-unreachable`: The remote address is not reachable. (ECONNREFUSED, ECONNRESET, ENETRESET on Windows, EHOSTUNREACH, EHOSTDOWN, ENETUNREACH, ENETDOWN)
@@ -116,6 +139,17 @@ interface udp {
 	/// If at least one datagram has been sent successfully, this function never returns an error.
 	/// 
 	/// If the input list is empty, the function returns `ok(0)`.
+	/// 
+	/// Most `datagram` fields are optional. When `none` is passed,
+	/// - `remote-address`: The packet will be sent to the connected `remote-address`. Or fail if not connected.
+	/// - `local-address`: The system will choose a suitable source address.
+	/// - `traffic-class`: The value of the `traffic-class` socket option (below) will be used.
+	/// - `hop-limit`: The value of the `unicast-hop-limit` socket option (below) will be used.
+	/// 
+	/// The closest equivalent to this function is Linux' `sendmmsg` function with the following ancillary messages:
+	/// - IP_PKTINFO or IPV6_PKTINFO
+	/// - IP_TOS or IPV6_TCLASS
+	/// - IP_TTL or IPV6_HOPLIMIT
 	/// 
 	/// # Typical errors
 	/// - `address-family-mismatch`: The `remote-address` has the wrong address family. (EAFNOSUPPORT)
@@ -186,6 +220,20 @@ interface udp {
 	/// - `concurrency-conflict`: (set) Another `bind` or `connect` operation is already in progress. (EALREADY)
 	unicast-hop-limit: func(this: udp-socket) -> result<u8, error-code>
 	set-unicast-hop-limit: func(this: udp-socket, value: u8) -> result<_, error-code>
+
+	/// Equivalent to the IP_TOS & IPV6_TCLASS socket options.
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	traffic-class: func(this: udp-socket) -> result<u8, error-code>
+	set-traffic-class: func(this: udp-socket, value: u8) -> result<_, error-code>
+
+	/// Equivalent to the IP_DONTFRAG & IPV6_DONTFRAG socket options.
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	dont-fragment: func(this: udp-socket) -> result<u8, error-code>
+	set-dont-fragment: func(this: udp-socket, value: u8) -> result<_, error-code>
 
 	/// The kernel buffer space reserved for sends/receives on this socket.
 	/// 

@@ -4,9 +4,15 @@ interface tcp {
 	use wasi:poll/poll.{pollable}
 	use network.{network, error-code, ip-socket-address, ip-address-family}
 
+	/// Amount of time in nanoseconds.
+	/// This is a placeholder type, in the hope that WASI someday will have a central package for time-related types.
+	/// `wasi-clocks` currently doesn't have a sufficient type.
+	/// To accomodate the possibility that an eventual Duration may be signed, all wasi-socket implementations must trap if they encounter a duration >= 2^63
+	type duration = u64
+
 	/// A TCP socket handle.
 	type tcp-socket = u32
-	
+
 
 	enum shutdown-type {
 		/// Similar to `SHUT_RD` in POSIX.
@@ -51,7 +57,10 @@ interface tcp {
 	start-bind: func(this: tcp-socket, network: network, local-address: ip-socket-address) -> result<_, error-code>
 	finish-bind: func(this: tcp-socket) -> result<_, error-code>
 
-	/// Connect to a remote endpoint.
+	/// Connect to a remote endpoint and optionally send some data.
+	/// 
+	/// This operation does not finish until all initial data has been written, or an error has occurred.
+	/// If `fast-open` is enabled, some of `initial-data` may be sent as part of the opening handshake.
 	/// 
 	/// On success:
 	/// - the socket is transitioned into the Connection state
@@ -80,7 +89,7 @@ interface tcp {
 	/// - <https://man7.org/linux/man-pages/man2/connect.2.html>
 	/// - <https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect>
 	/// - <https://man.freebsd.org/cgi/man.cgi?connect>
-	start-connect: func(this: tcp-socket, network: network, remote-address: ip-socket-address) -> result<_, error-code>
+	start-connect: func(this: tcp-socket, network: network, remote-address: ip-socket-address, initial-data: list<u8>) -> result<_, error-code>
 	finish-connect: func(this: tcp-socket) -> result<tuple<input-stream, output-stream>, error-code>
 
 	/// Start listening for new connections.
@@ -154,6 +163,11 @@ interface tcp {
 	/// - <https://man.freebsd.org/cgi/man.cgi?query=getpeername&sektion=2&n=1>
 	remote-address: func(this: tcp-socket) -> result<ip-socket-address, error-code>
 
+	/// Whether the socket is listening for new connections.
+	/// 
+	/// Equivalent to the SO_ACCEPTCONN socket option.
+	is-listening: func(this: tcp-socket) -> bool
+
 	/// Whether this is a IPv4 or IPv6 socket.
 	/// 
 	/// Equivalent to the SO_DOMAIN socket option.
@@ -176,6 +190,7 @@ interface tcp {
 	/// # Typical errors
 	/// - `already-connected`:    (set) The socket is already in the Connection state.
 	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	listen-backlog-size: func(this: tcp-socket) -> result<u64, error-code>
 	set-listen-backlog-size: func(this: tcp-socket, value: u64) -> result<_, error-code>
 
 	/// Equivalent to the SO_KEEPALIVE socket option.
@@ -185,12 +200,40 @@ interface tcp {
 	keep-alive: func(this: tcp-socket) -> result<bool, error-code>
 	set-keep-alive: func(this: tcp-socket, value: bool) -> result<_, error-code>
 
+	/// Equivalent to the TCP_KEEPIDLE socket option.
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	keep-alive-idle-time: func(this: tcp-socket) -> result<duration, error-code>
+	set-keep-alive-idle-time: func(this: tcp-socket, value: duration) -> result<_, error-code>
+
+	/// Equivalent to the TCP_KEEPINTVL socket option.
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	keep-alive-interval: func(this: tcp-socket) -> result<duration, error-code>
+	set-keep-alive-interval: func(this: tcp-socket, value: duration) -> result<_, error-code>
+
+	/// Equivalent to the TCP_KEEPCNT socket option.
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	keep-alive-count: func(this: tcp-socket) -> result<u32, error-code>
+	set-keep-alive-count: func(this: tcp-socket, value: u32) -> result<_, error-code>
+
 	/// Equivalent to the TCP_NODELAY socket option.
 	/// 
 	/// # Typical errors
 	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
 	no-delay: func(this: tcp-socket) -> result<bool, error-code>
 	set-no-delay: func(this: tcp-socket, value: bool) -> result<_, error-code>
+
+	/// Equivalent to the TCP_CORK/TCP_NOPUSH socket option.
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	no-push: func(this: tcp-socket) -> result<bool, error-code>
+	set-no-push: func(this: tcp-socket, value: bool) -> result<_, error-code>
 	
 	/// Equivalent to the IP_TTL & IPV6_UNICAST_HOPS socket options.
 	/// 
@@ -198,8 +241,28 @@ interface tcp {
 	/// - `already-connected`:    (set) The socket is already in the Connection state.
 	/// - `already-listening`:    (set) The socket is already in the Listener state.
 	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
-	unicast-hop-limit: func(this: tcp-socket) -> result<u8, error-code>
-	set-unicast-hop-limit: func(this: tcp-socket, value: u8) -> result<_, error-code>
+	hop-limit: func(this: tcp-socket) -> result<u8, error-code>
+	set-hop-limit: func(this: tcp-socket, value: u8) -> result<_, error-code>
+
+	/// Equivalent to the IP_TOS & IPV6_TCLASS socket options.
+	/// 
+	/// # Typical errors
+	/// - `already-connected`:    (set) The socket is already in the Connection state.
+	/// - `already-listening`:    (set) The socket is already in the Listener state.
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	traffic-class: func(this: tcp-socket) -> result<u8, error-code>
+	set-traffic-class: func(this: tcp-socket, value: u8) -> result<_, error-code>
+
+	/// Enable TCP Fast Open (TFO).
+	/// 
+	/// Equivalent to the TCP_FASTOPEN socket options.
+	/// 
+	/// # Typical errors
+	/// - `already-connected`:    (set) The socket is already in the Connection state.
+	/// - `already-listening`:    (set) The socket is already in the Listener state.
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	fast-open: func(this: tcp-socket) -> result<bool, error-code>
+	set-fast-open: func(this: tcp-socket, value: bool) -> result<_, error-code>
 
 	/// The kernel buffer space reserved for sends/receives on this socket.
 	/// 

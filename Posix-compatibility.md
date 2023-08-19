@@ -151,24 +151,24 @@ Columns:
 | SO_DOMAIN                       | ✅       | ❌     | ✅    | ✅      | ❌     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::address-family`](tcp)<br/>[`udp::address-family`](udp) <br/><br/> SO_PROTOCOL_INFO on Windows. |
 | SO_TYPE                         | ✅*      | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ✅  | ✅      | ✅    | ✅    | ❌    | ✅   | * indirectly through the type of the socket resource. |
 | SO_PROTOCOL                     | ✅*      | ❌     | ✅    | ✅      | ❌     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | * indirectly through the type of the socket resource. SO_PROTOCOL_INFO on Windows. |
-| SO_ACCEPTCONN                   | ❔       | ✅     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
+| SO_ACCEPTCONN                   | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::is-listening`](tcp) |
 | IPV6_V6ONLY                     | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ✅      | ❌    | ✅    | ✅    | ✅   | [`tcp::(set-)ipv6-only`](tcp)<br/>[`udp::(set-)ipv6-only`](udp) |
 | IP_HDRINCL                      | ⛔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | Out of scope. Raw sockets only. |
 | IPV6_HDRINCL                    | ⛔       | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | Out of scope. Raw sockets only. |
-| IP_TTL                          | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)unicast-hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
-| IPV6_UNICAST_HOPS               | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)unicast-hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
-| IP_RECVTTL                      | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
-| IPV6_RECVHOPLIMIT               | ❔       | ❌     | ✅    | ❌      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
-| IP_TOS                          | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | |
-| IPV6_TCLASS                     | ❔       | ❌     | ✅    | ❌      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | |
-| IP_RECVTOS                      | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ✅    | ❌   | |
-| IPV6_RECVTCLASS                 | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ✅    | ❌   | |
-| IP_RECVPKTINFO                  | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | IP_PKTINFO on Linux & Windows, IP_RECVDSTADDR+IP_RECVIF on MacOS & FreeBSD. |
-| IPV6_RECVPKTINFO                | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | IPV6_PKTINFO on Windows. |
-| IP_DONTFRAG                     | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | IP_DONTFRAGMENT on Windows, implementable using IP_MTU_DISCOVER on Linux. |
-| IPV6_DONTFRAG                   | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | |
-| IP_MTU_DISCOVER                 | ❔       | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ✅    | ✅    | ❌   | |
-| IPV6_MTU_DISCOVER               | ❔       | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ✅    | ✅    | ❌   | |
+| IP_TTL                          | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
+| IPV6_UNICAST_HOPS               | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
+| IP_RECVTTL                      | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | See [`udp::receive`](udp) |
+| IPV6_RECVHOPLIMIT               | ✅       | ❌     | ✅    | ❌      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | See [`udp::receive`](udp) |
+| IP_TOS                          | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | [`tcp::(set-)traffic-class`](tcp)<br/>[`udp::(set-)traffic-class`](udp) |
+| IPV6_TCLASS                     | ✅       | ❌     | ✅    | ❌      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | [`tcp::(set-)traffic-class`](tcp)<br/>[`udp::(set-)traffic-class`](udp) |
+| IP_RECVTOS                      | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ✅    | ❌   | See [`udp::receive`](udp) |
+| IPV6_RECVTCLASS                 | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ✅    | ❌   | See [`udp::receive`](udp) |
+| IP_RECVPKTINFO                  | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | See [`udp::receive`](udp) <br/><br/> IP_PKTINFO on Linux & Windows, IP_RECVDSTADDR+IP_RECVIF on MacOS & FreeBSD. |
+| IPV6_RECVPKTINFO                | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | See [`udp::receive`](udp) <br/><br/> IPV6_PKTINFO on Windows. |
+| IP_DONTFRAG                     | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | [`udp::(set-)dont-fragment`](udp) <br/><br/> IP_DONTFRAGMENT on Windows, implementable using IP_MTU_DISCOVER on Linux. |
+| IPV6_DONTFRAG                   | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | [`udp::(set-)dont-fragment`](udp) |
+| IP_MTU_DISCOVER                 | ❔*      | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ✅    | ✅    | ❌   | Only the "Don't fragment" behaviour is supported as part of IP_DONTFRAG. |
+| IPV6_MTU_DISCOVER               | ❔*      | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ✅    | ✅    | ❌   | Only the "Don't fragment" behaviour is supported as part of IP_DONTFRAG. |
 | SO_RCVBUF                       | ✅       | ✅     | ✅    | ❌      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ❌    | ✅    | ❌   | [`tcp::(set-)receive-buffer-size`](tcp)<br/>[`udp::(set-)receive-buffer-size`](udp) |
 | SO_SNDBUF                       | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ✅    | ❌    | ❌   | [`tcp::(set-)send-buffer-size`](tcp)<br/>[`udp::(set-)send-buffer-size`](udp) |
 | SO_RCVLOWAT                     | ❔       | ✅     | ✅    | ❌      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
@@ -176,11 +176,11 @@ Columns:
 | SO_RCVTIMEO                     | ⛔       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ❌      | ❌  | ✅      | ❌    | ✅    | ❌    | ❌   | WASI sockets are always non-blocking. Timeouts can be recreated in libc. |
 | SO_SNDTIMEO                     | ⛔       | ✅     | ❌    | ✅      | ✅     | ✅      | ❌    | ✅    | ✅   | ❌      | ❌  | ✅      | ❌    | ❌    | ❌    | ❌   | WASI sockets are always non-blocking. Timeouts can be recreated in libc. |
 | SO_KEEPALIVE                    | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ✅      | ✅    | ✅    | ❌    | ✅   | [`tcp::(set-)keep-alive`](tcp) |
-| TCP_KEEPCNT                     | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ❌  | ❌      | ✅    | ❌    | ❌    | ❌   | |
-| TCP_KEEPIDLE                    | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ✅    | ❌    | ❌   | TCP_KEEPALIVE on MacOS |
-| TCP_KEEPINTVL                   | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ✅    | ❌    | ❌   | |
+| TCP_KEEPCNT                     | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ❌  | ❌      | ✅    | ❌    | ❌    | ❌   | [`tcp::(set-)keep-alive-count`](tcp) |
+| TCP_KEEPIDLE                    | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ✅    | ❌    | ❌   | [`tcp::(set-)keep-alive-idle-time`](tcp) <br/><br/> TCP_KEEPALIVE on MacOS |
+| TCP_KEEPINTVL                   | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ✅    | ❌    | ❌   | [`tcp::(set-)keep-alive-interval`](tcp) |
 | TCP_NODELAY                     | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ✅      | ✅  | ✅      | ✅    | ✅    | ❌    | ✅   | [`tcp::(set-)no-delay`](tcp) |
-| TCP_CORK                        | ❔       | ❌     | ✅    | ❌      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ✅    | ❌    | ❌    | ✅   | TCP_NOPUSH on MacOS & FreeBSD |
+| TCP_CORK                        | ✅       | ❌     | ✅    | ❌      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ✅    | ❌    | ❌    | ✅   | [`tcp::(set-)no-push`](tcp) <br/><br/> TCP_NOPUSH on MacOS & FreeBSD |
 | SO_LINGER                       | ❔       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ✅      | ✅  | ✅      | ✅    | ❌    | ❌    | ❌   | |
 | SO_OOBINLINE                    | ⛔       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | Not supported, see [OOB](#oob) |
 | SO_DEBUG                        | ❔       | ✅     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
@@ -210,8 +210,8 @@ Columns:
 | IP_UNBLOCK_SOURCE               | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | Equivalent to MCAST_UNBLOCK_SOURCE |
 | IP_MSFILTER                     | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
 | TCP_INFO                        | ❔       | ❌     | ✅    | ❌      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ✅    | ❌    | ❌    | ✅   | |
-| TCP_FASTOPEN                    | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ❌    | ✅   | |
-| TCP_FASTOPEN_CONNECT            | ❔       | ❌     | ✅    | ❌      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ❌    | ✅    | ❌    | ✅   | |
+| TCP_FASTOPEN                    | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ❌    | ✅   | [`tcp::(set-)fast-open`](tcp). Also, see the `initial-data` parameter of `connect`. |
+| TCP_FASTOPEN_CONNECT            | ✅*      | ❌     | ✅    | ❌      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ❌    | ✅    | ❌    | ✅   | * As TCP_FASTOPEN |
 | TCP_FASTOPEN_KEY                | ❔       | ❌     | ✅    | ❌      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
 | TCP_FASTOPEN_NO_COOKIE          | ❔       | ❌     | ✅    | ❌      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
 | TCP_FASTOPEN_FORCE_ENABLE       | ❔       | ❌     | ❌    | ❌      | ✅     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
