@@ -1,7 +1,7 @@
 
 interface udp {
 	use wasi:poll/poll.{pollable}
-	use network.{network, error-code, ip-socket-address, ip-address-family}
+	use network.{network, error-code, ip-socket-address, ip-address-family, interface-id}
 
 
 	/// A UDP socket handle.
@@ -24,6 +24,11 @@ interface udp {
 		/// 
 		/// Equivalent to the IP_PKTINFO & IPV6_PKTINFO ancillary messages.
 		local-address: option<ip-socket-address>,
+
+		/// The local interface.
+		/// 
+		/// Equivalent to the IP_PKTINFO & IPV6_PKTINFO ancillary messages.
+		local-interface: option<interface-id>,
 
 		/// The value of the Traffic Class field of the IP packet. (Also known as "Type of Service (TOS)" in IPv4)
 		/// 
@@ -109,7 +114,7 @@ interface udp {
 	/// If `max-results` is 0, this function returns successfully with an empty list.
 	/// 
 	/// The closest equivalent to this function is Linux' `recvmmsg` function while having the following options enabled:
-	/// - IP_PKTINFO/IP_RECVDSTADDR or IPV6_RECVPKTINFO
+	/// - IP_PKTINFO/IP_RECVDSTADDR+IP_RECVIF or IPV6_RECVPKTINFO
 	/// - IP_RECVTOS or IPV6_RECVTCLASS
 	/// - IP_RECVTTL or IPV6_RECVHOPLIMIT
 	/// 
@@ -143,6 +148,7 @@ interface udp {
 	/// Most `datagram` fields are optional. When `none` is passed,
 	/// - `remote-address`: The packet will be sent to the connected `remote-address`. Or fail if not connected.
 	/// - `local-address`: The system will choose a suitable source address.
+	/// - `local-interface`: The system will choose a suitable interface.
 	/// - `traffic-class`: The value of the `traffic-class` socket option (below) will be used.
 	/// - `hop-limit`: The value of the `unicast-hop-limit` socket option (below) will be used.
 	/// 

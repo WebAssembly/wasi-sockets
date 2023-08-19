@@ -81,7 +81,10 @@ There is no need for this to map 1:1 to a physical network interface.
 <li><a name="ip_address.ipv4"><code>ipv4</code></a>: <a href="#ipv4_address"><a href="#ipv4_address"><code>ipv4-address</code></a></a></li>
 <li><a name="ip_address.ipv6"><code>ipv6</code></a>: <a href="#ipv6_address"><a href="#ipv6_address"><code>ipv6-address</code></a></a></li>
 </ul>
-<h4><a name="error_code"><code>enum error-code</code></a></h4>
+<h4><a name="interface_id"><code>type interface-id</code></a></h4>
+<p><code>u32</code></p>
+<p>
+#### <a name="error_code">`enum error-code`</a>
 <p>Error codes.</p>
 <p>In theory, every API can return any error code.
 In practice, API's typically only return the errors documented per API
@@ -319,6 +322,9 @@ mean &quot;ready&quot;.</p>
 #### <a name="ip_address_family">`type ip-address-family`</a>
 [`ip-address-family`](#ip_address_family)
 <p>
+#### <a name="interface_id">`type interface-id`</a>
+[`interface-id`](#interface_id)
+<p>
 #### <a name="udp_socket">`type udp-socket`</a>
 `u32`
 <p>A UDP socket handle.
@@ -339,6 +345,11 @@ Equivalent to the <code>dest_addr</code> parameter of <code>sendto</code> and th
 <li>
 <p><a name="datagram.local_address"><a href="#local_address"><code>local-address</code></a></a>: option&lt;<a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a>&gt;</p>
 <p>The local address.
+<p>Equivalent to the IP_PKTINFO &amp; IPV6_PKTINFO ancillary messages.</p>
+</li>
+<li>
+<p><a name="datagram.local_interface"><code>local-interface</code></a>: option&lt;<a href="#interface_id"><a href="#interface_id"><code>interface-id</code></a></a>&gt;</p>
+<p>The local interface.
 <p>Equivalent to the IP_PKTINFO &amp; IPV6_PKTINFO ancillary messages.</p>
 </li>
 <li>
@@ -459,7 +470,7 @@ The returned list may contain fewer elements than requested, but never more.
 If <code>max-results</code> is 0, this function returns successfully with an empty list.</p>
 <p>The closest equivalent to this function is Linux' <code>recvmmsg</code> function while having the following options enabled:</p>
 <ul>
-<li>IP_PKTINFO/IP_RECVDSTADDR or IPV6_RECVPKTINFO</li>
+<li>IP_PKTINFO/IP_RECVDSTADDR+IP_RECVIF or IPV6_RECVPKTINFO</li>
 <li>IP_RECVTOS or IPV6_RECVTCLASS</li>
 <li>IP_RECVTTL or IPV6_RECVHOPLIMIT</li>
 </ul>
@@ -501,6 +512,7 @@ If at least one datagram has been sent successfully, this function never returns
 <ul>
 <li><a href="#remote_address"><code>remote-address</code></a>: The packet will be sent to the connected <a href="#remote_address"><code>remote-address</code></a>. Or fail if not connected.</li>
 <li><a href="#local_address"><code>local-address</code></a>: The system will choose a suitable source address.</li>
+<li><code>local-interface</code>: The system will choose a suitable interface.</li>
 <li><a href="#traffic_class"><code>traffic-class</code></a>: The value of the <a href="#traffic_class"><code>traffic-class</code></a> socket option (below) will be used.</li>
 <li><a href="#hop_limit"><code>hop-limit</code></a>: The value of the <a href="#unicast_hop_limit"><code>unicast-hop-limit</code></a> socket option (below) will be used.</li>
 </ul>

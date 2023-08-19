@@ -183,4 +183,5 @@ interface network {
 		ipv6(ipv6-socket-address),
 	}
 
+	type interface-id = u32
 }
