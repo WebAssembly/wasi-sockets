@@ -604,6 +604,62 @@ call <a href="#remote_address"><code>remote-address</code></a> to get their addr
 <ul>
 <li><a name="set_unicast_hop_limit.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
+<h4><a name="traffic_class"><code>traffic-class: func</code></a></h4>
+<p>Equivalent to the IP_TOS &amp; IPV6_TCLASS socket options.</p>
+<p>The value is typically composed of the DSCP (6 high bits) + ECN (2 low bits).</p>
+<h1>Implementors note</h1>
+<p>Windows does not support this.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="traffic_class.this"><code>this</code></a>: <a href="#udp_socket"><a href="#udp_socket"><code>udp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="traffic_class.0"></a> result&lt;<code>u8</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_traffic_class"><code>set-traffic-class: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_traffic_class.this"><code>this</code></a>: <a href="#udp_socket"><a href="#udp_socket"><code>udp-socket</code></a></a></li>
+<li><a name="set_traffic_class.value"><code>value</code></a>: <code>u8</code></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_traffic_class.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="dont_fragment"><code>dont-fragment: func</code></a></h4>
+<p>Equivalent to the IP_DONTFRAG &amp; IPV6_DONTFRAG socket options.</p>
+<h1>Implementors note</h1>
+<ul>
+<li>IP_DONTFRAGMENT on Windows</li>
+<li>Linux has no direct equivalent, but the same effect can be reached by setting IP_MTU_DISCOVER to IP_PMTUDISC_DO.</li>
+</ul>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="dont_fragment.this"><code>this</code></a>: <a href="#udp_socket"><a href="#udp_socket"><code>udp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="dont_fragment.0"></a> result&lt;<code>bool</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_dont_fragment"><code>set-dont-fragment: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_dont_fragment.this"><code>this</code></a>: <a href="#udp_socket"><a href="#udp_socket"><code>udp-socket</code></a></a></li>
+<li><a name="set_dont_fragment.value"><code>value</code></a>: <code>bool</code></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_dont_fragment.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
 <h4><a name="receive_buffer_size"><code>receive-buffer-size: func</code></a></h4>
 <p>The kernel buffer space reserved for sends/receives on this socket.</p>
 <p>Note #1: an implementation may choose to cap or round the buffer size when setting the value.
@@ -1356,6 +1412,35 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <h5>Return values</h5>
 <ul>
 <li><a name="set_hop_limit.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="traffic_class"><code>traffic-class: func</code></a></h4>
+<p>Equivalent to the IP_TOS &amp; IPV6_TCLASS socket options.</p>
+<p>The value is typically composed of the DSCP (6 high bits) + ECN (2 low bits).</p>
+<h1>Implementors note</h1>
+<p>Windows does not support this.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>already-connected</code>:    (set) The socket is already in the Connection state.</li>
+<li><code>already-listening</code>:    (set) The socket is already in the Listener state.</li>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="traffic_class.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="traffic_class.0"></a> result&lt;<code>u8</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_traffic_class"><code>set-traffic-class: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_traffic_class.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_traffic_class.value"><code>value</code></a>: <code>u8</code></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_traffic_class.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
 <h4><a name="receive_buffer_size"><code>receive-buffer-size: func</code></a></h4>
 <p>The kernel buffer space reserved for sends/receives on this socket.</p>

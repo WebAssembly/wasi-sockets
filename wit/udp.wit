@@ -189,6 +189,29 @@ interface udp {
 	unicast-hop-limit: func(this: udp-socket) -> result<u8, error-code>
 	set-unicast-hop-limit: func(this: udp-socket, value: u8) -> result<_, error-code>
 
+	/// Equivalent to the IP_TOS & IPV6_TCLASS socket options.
+	/// 
+	/// The value is typically composed of the DSCP (6 high bits) + ECN (2 low bits).
+	/// 
+	/// # Implementors note
+	/// Windows does not support this.
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	traffic-class: func(this: udp-socket) -> result<u8, error-code>
+	set-traffic-class: func(this: udp-socket, value: u8) -> result<_, error-code>
+
+	/// Equivalent to the IP_DONTFRAG & IPV6_DONTFRAG socket options.
+	/// 
+	/// # Implementors note
+	/// - IP_DONTFRAGMENT on Windows
+	/// - Linux has no direct equivalent, but the same effect can be reached by setting IP_MTU_DISCOVER to IP_PMTUDISC_DO.
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	dont-fragment: func(this: udp-socket) -> result<bool, error-code>
+	set-dont-fragment: func(this: udp-socket, value: bool) -> result<_, error-code>
+
 	/// The kernel buffer space reserved for sends/receives on this socket.
 	/// 
 	/// Note #1: an implementation may choose to cap or round the buffer size when setting the value.

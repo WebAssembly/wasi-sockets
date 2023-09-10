@@ -159,16 +159,16 @@ Columns:
 | IPV6_UNICAST_HOPS               | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
 | IP_RECVTTL                      | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
 | IPV6_RECVHOPLIMIT               | ❔       | ❌     | ✅    | ❌      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
-| IP_TOS                          | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | |
-| IPV6_TCLASS                     | ❔       | ❌     | ✅    | ❌      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | |
+| IP_TOS                          | ✅       | ❌     | ✅    | ❌      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | [`tcp::(set-)traffic-class`](tcp)<br/>[`udp::(set-)traffic-class`](udp) |
+| IPV6_TCLASS                     | ✅       | ❌     | ✅    | ❌      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | [`tcp::(set-)traffic-class`](tcp)<br/>[`udp::(set-)traffic-class`](udp) |
 | IP_RECVTOS                      | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ✅    | ❌   | |
 | IPV6_RECVTCLASS                 | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ✅    | ❌   | |
 | IP_RECVPKTINFO                  | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | IP_PKTINFO on Linux & Windows, IP_RECVDSTADDR+IP_RECVIF on MacOS & FreeBSD. |
 | IPV6_RECVPKTINFO                | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | IPV6_PKTINFO on Windows. |
-| IP_DONTFRAG                     | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | IP_DONTFRAGMENT on Windows, implementable using IP_MTU_DISCOVER on Linux. |
-| IPV6_DONTFRAG                   | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | |
-| IP_MTU_DISCOVER                 | ❔       | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ✅    | ✅    | ❌   | |
-| IPV6_MTU_DISCOVER               | ❔       | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ✅    | ✅    | ❌   | |
+| IP_DONTFRAG                     | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | [`udp::(set-)dont-fragment`](udp) <br/><br/> IP_DONTFRAGMENT on Windows, implementable using IP_MTU_DISCOVER on Linux. |
+| IPV6_DONTFRAG                   | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | [`udp::(set-)dont-fragment`](udp) |
+| IP_MTU_DISCOVER                 | ❔*      | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ✅    | ✅    | ❌   | Only the IP_PMTUDISC_DO behaviour is supported as part of IP_DONTFRAG. |
+| IPV6_MTU_DISCOVER               | ❔*      | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ✅    | ✅    | ❌   | Only the IP_PMTUDISC_DO behaviour is supported as part of IPV6_DONTFRAG. |
 | SO_RCVBUF                       | ✅       | ✅     | ✅    | ❌      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ❌    | ✅    | ❌   | [`tcp::(set-)receive-buffer-size`](tcp)<br/>[`udp::(set-)receive-buffer-size`](udp) |
 | SO_SNDBUF                       | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ✅    | ❌    | ❌   | [`tcp::(set-)send-buffer-size`](tcp)<br/>[`udp::(set-)send-buffer-size`](udp) |
 | SO_RCVLOWAT                     | ❔       | ✅     | ✅    | ❌      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |

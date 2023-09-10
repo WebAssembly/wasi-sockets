@@ -201,6 +201,20 @@ interface tcp {
 	hop-limit: func(this: tcp-socket) -> result<u8, error-code>
 	set-hop-limit: func(this: tcp-socket, value: u8) -> result<_, error-code>
 
+	/// Equivalent to the IP_TOS & IPV6_TCLASS socket options.
+	/// 
+	/// The value is typically composed of the DSCP (6 high bits) + ECN (2 low bits).
+	/// 
+	/// # Implementors note
+	/// Windows does not support this.
+	/// 
+	/// # Typical errors
+	/// - `already-connected`:    (set) The socket is already in the Connection state.
+	/// - `already-listening`:    (set) The socket is already in the Listener state.
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	traffic-class: func(this: tcp-socket) -> result<u8, error-code>
+	set-traffic-class: func(this: tcp-socket, value: u8) -> result<_, error-code>
+
 	/// The kernel buffer space reserved for sends/receives on this socket.
 	/// 
 	/// Note #1: an implementation may choose to cap or round the buffer size when setting the value.
