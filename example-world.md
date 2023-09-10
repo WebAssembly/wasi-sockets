@@ -325,8 +325,28 @@ mean &quot;ready&quot;.</p>
 <h4><a name="datagram"><code>record datagram</code></a></h4>
 <h5>Record Fields</h5>
 <ul>
-<li><a name="datagram.data"><code>data</code></a>: list&lt;<code>u8</code>&gt;</li>
-<li><a name="datagram.remote_address"><a href="#remote_address"><code>remote-address</code></a></a>: <a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a></li>
+<li>
+<p><a name="datagram.data"><code>data</code></a>: list&lt;<code>u8</code>&gt;</p>
+</li>
+<li>
+<p><a name="datagram.remote_address"><a href="#remote_address"><code>remote-address</code></a></a>: <a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a></p>
+</li>
+<li>
+<p><a name="datagram.local_address"><a href="#local_address"><code>local-address</code></a></a>: option&lt;<a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a>&gt;</p>
+<p>The local address.
+<p>Equivalent to the IP_PKTINFO &amp; IPV6_PKTINFO ancillary messages.</p>
+</li>
+<li>
+<p><a name="datagram.traffic_class"><code>traffic-class</code></a>: option&lt;<code>u8</code>&gt;</p>
+<p>The value of the Traffic Class field of the IP packet. (Also known as "Type of Service (TOS)" in IPv4)
+<p>This value is typically composed of the DSCP (6 high bits) + ECN (2 low bits).</p>
+<p>Equivalent to the IP_TOS &amp; IPV6_TCLASS ancillary messages.</p>
+</li>
+<li>
+<p><a name="datagram.hop_limit"><code>hop-limit</code></a>: option&lt;<code>u8</code>&gt;</p>
+<p>The value of the Hop Limit field of the IP packet. (Also known as "Time To Live (TTL)" in IPv4)
+<p>Equivalent to the IP_TTL &amp; IPV6_HOPLIMIT ancillary messages.</p>
+</li>
 </ul>
 <hr />
 <h3>Functions</h3>
@@ -432,11 +452,27 @@ If the TCP/UDP port is zero, the socket will be bound to a random free port.</p>
 <p>This function attempts to receive up to <code>max-results</code> datagrams on the socket without blocking.
 The returned list may contain fewer elements than requested, but never more.
 If <code>max-results</code> is 0, this function returns successfully with an empty list.</p>
+<p>If a platform does not support receiving a particular field, its value will be set to <code>None</code> in the returned datagram.</p>
 <h1>Typical errors</h1>
 <ul>
 <li><code>not-bound</code>:          The socket is not bound to any local address. (EINVAL)</li>
 <li><code>remote-unreachable</code>: The remote address is not reachable. (ECONNREFUSED, ECONNRESET, ENETRESET on Windows, EHOSTUNREACH, EHOSTDOWN, ENETUNREACH, ENETDOWN)</li>
 <li><code>would-block</code>:        There is no pending data available to be read at the moment. (EWOULDBLOCK, EAGAIN)</li>
+</ul>
+<h1>Implementors note:</h1>
+<p>The closest equivalent to this function is Linux' <code>recvmmsg</code> function while having the following options enabled:</p>
+<ul>
+<li>IP_RECVPKTINFO or IPV6_RECVPKTINFO</li>
+<li>IP_RECVTOS or IPV6_RECVTCLASS</li>
+<li>IP_RECVTTL or IPV6_RECVHOPLIMIT</li>
+</ul>
+<p>Naming differences:</p>
+<ul>
+<li>IP_RECVPKTINFO exists as-is on NetBSD, Solaris, AIX</li>
+<li>IP_RECVPKTINFO is named IP_PKTINFO on Linux &amp; Windows.</li>
+<li>IP_RECVPKTINFO partially is IP_RECVDSTADDR on MacOS &amp; FreeBSD.</li>
+<li>IPV6_RECVPKTINFO is named IPV6_PKTINFO on Windows.</li>
+<li>IPV6_RECVHOPLIMIT is named IPV6_HOPLIMIT on Windows</li>
 </ul>
 <h1>References</h1>
 <ul>
@@ -475,10 +511,21 @@ call <a href="#remote_address"><code>remote-address</code></a> to get their addr
 <li><code>invalid-remote-address</code>:  The port in <a href="#remote_address"><code>remote-address</code></a> is set to 0. (EDESTADDRREQ, EADDRNOTAVAIL)</li>
 <li><code>already-connected</code>:       The socket is in &quot;connected&quot; mode and the <code>datagram.remote-address</code> does not match the address passed to <code>connect</code>. (EISCONN)</li>
 <li><code>not-bound</code>:               The socket is not bound to any local address. Unlike POSIX, this function does not perform an implicit bind.</li>
+<li><code>not-supported</code>:           An unsupported field in the datagram was set to Some value.</li>
 <li><code>remote-unreachable</code>:      The remote address is not reachable. (ECONNREFUSED, ECONNRESET, ENETRESET on Windows, EHOSTUNREACH, EHOSTDOWN, ENETUNREACH, ENETDOWN)</li>
 <li><code>datagram-too-large</code>:      The datagram is too large. (EMSGSIZE)</li>
 <li><code>would-block</code>:             The send buffer is currently full. (EWOULDBLOCK, EAGAIN)</li>
 </ul>
+<h1>Implementors note</h1>
+<p>The closest equivalent to this function is Linux' <code>sendmmsg</code> with zero or more
+ancillary messages for each not-None datagram field:</p>
+<ul>
+<li>Some(local-address): IP_PKTINFO or IPV6_PKTINFO</li>
+<li>Some(traffic-class): IP_TOS or IPV6_TCLASS</li>
+<li>Some(hop-limit):     IP_TTL or IPV6_HOPLIMIT
+If an implementation does not support a particular ancillary message type, it should return <code>not-supported</code>.</li>
+</ul>
+<p>On Windows, when sending a <code>traffic-class</code> value, only the ECN bits (the lowest two) are allowed through.</p>
 <h1>References</h1>
 <ul>
 <li><a href="https://pubs.opengroup.org/onlinepubs/9699919799/functions/sendto.html">https://pubs.opengroup.org/onlinepubs/9699919799/functions/sendto.html</a></li>

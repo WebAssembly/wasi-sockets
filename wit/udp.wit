@@ -12,12 +12,22 @@ interface udp {
 		data: list<u8>, // Theoretical max size: ~64 KiB. In practice, typically less than 1500 bytes.
 		remote-address: ip-socket-address,
 
-		/// Possible future additions:
-		/// local-address: ip-socket-address, // IP_PKTINFO / IP_RECVDSTADDR / IPV6_PKTINFO
-		/// local-interface: u32, // IP_PKTINFO / IP_RECVIF
-		/// ttl: u8, // IP_RECVTTL
-		/// dscp: u6, // IP_RECVTOS
-		/// ecn: u2, // IP_RECVTOS
+		/// The local address.
+		/// 
+		/// Equivalent to the IP_PKTINFO & IPV6_PKTINFO ancillary messages.
+		local-address: option<ip-socket-address>,
+
+		/// The value of the Traffic Class field of the IP packet. (Also known as "Type of Service (TOS)" in IPv4)
+		/// 
+		/// This value is typically composed of the DSCP (6 high bits) + ECN (2 low bits).
+		/// 
+		/// Equivalent to the IP_TOS & IPV6_TCLASS ancillary messages.
+		traffic-class: option<u8>,
+
+		/// The value of the Hop Limit field of the IP packet. (Also known as "Time To Live (TTL)" in IPv4)
+		/// 
+		/// Equivalent to the IP_TTL & IPV6_HOPLIMIT ancillary messages.
+		hop-limit: option<u8>,
 	}
 
 
@@ -90,10 +100,25 @@ interface udp {
 	/// The returned list may contain fewer elements than requested, but never more.
 	/// If `max-results` is 0, this function returns successfully with an empty list.
 	/// 
+	/// If a platform does not support receiving a particular field, its value will be set to `None` in the returned datagram.
+	/// 
 	/// # Typical errors
 	/// - `not-bound`:          The socket is not bound to any local address. (EINVAL)
 	/// - `remote-unreachable`: The remote address is not reachable. (ECONNREFUSED, ECONNRESET, ENETRESET on Windows, EHOSTUNREACH, EHOSTDOWN, ENETUNREACH, ENETDOWN)
 	/// - `would-block`:        There is no pending data available to be read at the moment. (EWOULDBLOCK, EAGAIN)
+	/// 
+	/// # Implementors note:
+	/// The closest equivalent to this function is Linux' `recvmmsg` function while having the following options enabled:
+	/// - IP_RECVPKTINFO or IPV6_RECVPKTINFO
+	/// - IP_RECVTOS or IPV6_RECVTCLASS
+	/// - IP_RECVTTL or IPV6_RECVHOPLIMIT
+	/// 
+	/// Naming differences:
+	/// - IP_RECVPKTINFO exists as-is on NetBSD, Solaris, AIX
+	/// - IP_RECVPKTINFO is named IP_PKTINFO on Linux & Windows.
+	/// - IP_RECVPKTINFO partially is IP_RECVDSTADDR on MacOS & FreeBSD.
+	/// - IPV6_RECVPKTINFO is named IPV6_PKTINFO on Windows.
+	/// - IPV6_RECVHOPLIMIT is named IPV6_HOPLIMIT on Windows
 	/// 
 	/// # References
 	/// - <https://pubs.opengroup.org/onlinepubs/9699919799/functions/recvfrom.html>
@@ -126,9 +151,20 @@ interface udp {
 	/// - `invalid-remote-address`:  The port in `remote-address` is set to 0. (EDESTADDRREQ, EADDRNOTAVAIL)
 	/// - `already-connected`:       The socket is in "connected" mode and the `datagram.remote-address` does not match the address passed to `connect`. (EISCONN)
 	/// - `not-bound`:               The socket is not bound to any local address. Unlike POSIX, this function does not perform an implicit bind.
+	/// - `not-supported`:           An unsupported field in the datagram was set to Some value.
 	/// - `remote-unreachable`:      The remote address is not reachable. (ECONNREFUSED, ECONNRESET, ENETRESET on Windows, EHOSTUNREACH, EHOSTDOWN, ENETUNREACH, ENETDOWN)
 	/// - `datagram-too-large`:      The datagram is too large. (EMSGSIZE)
 	/// - `would-block`:             The send buffer is currently full. (EWOULDBLOCK, EAGAIN)
+	/// 
+	/// # Implementors note
+	/// The closest equivalent to this function is Linux' `sendmmsg` with zero or more
+	/// ancillary messages for each not-None datagram field:
+	/// - Some(local-address): IP_PKTINFO or IPV6_PKTINFO
+	/// - Some(traffic-class): IP_TOS or IPV6_TCLASS
+	/// - Some(hop-limit):     IP_TTL or IPV6_HOPLIMIT
+	/// If an implementation does not support a particular ancillary message type, it should return `not-supported`.
+	/// 
+	/// On Windows, when sending a `traffic-class` value, only the ECN bits (the lowest two) are allowed through.
 	/// 
 	/// # References
 	/// - <https://pubs.opengroup.org/onlinepubs/9699919799/functions/sendto.html>

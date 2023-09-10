@@ -76,6 +76,13 @@ None of the flags are directly present in WASI Sockets:
 - `MSG_EOR`: N/A (not supported on TCP & UDP sockets)
 - `MSG_CMSG_CLOEXEC`: N/A (only used on Unix domain sockets)
 
+The following ancillary messages are available as regular fields in the datagram parameter:
+- `IP_PKTINFO`/`IPV6_PKTINFO`
+- `IP_TOS`/`IPV6_TCLASS`
+- `IP_TTL`/`IPV6_HOPLIMIT`
+
+There are included unconditionally. There is no need for their RECV* equivalents (IP_RECVTTL, IP_RECVTOS, IP_RECVPKTINFO, etc...)
+
 ### `write`, `writev`, `send`, `sendto`, `sendmsg`, `sendmmsg` (non-standard)
 
 TCP sockets can be written to using [`streams::(blocking-)write`](streams). UDP sockets can be written to using [`udp::send`](udp).
@@ -90,6 +97,10 @@ None of the flags are directly present in WASI Sockets:
 - `MSG_OOB` (UDP): N/A
 - `MSG_EOR`: N/A (not supported on TCP & UDP sockets)
 
+The following ancillary messages are available as regular fields in the datagram parameter:
+- `IP_PKTINFO`/`IPV6_PKTINFO`
+- `IP_TOS`/`IPV6_TCLASS`
+- `IP_TTL`/`IPV6_HOPLIMIT`
 
 ### `sendfile` (non-standard)
 - TCP: Part of the WASI Streams proposal as [`output-stream::forward`](streams)
@@ -157,14 +168,14 @@ Columns:
 | IPV6_HDRINCL                    | ⛔       | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | Out of scope. Raw sockets only. |
 | IP_TTL                          | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)unicast-hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
 | IPV6_UNICAST_HOPS               | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)unicast-hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
-| IP_RECVTTL                      | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
-| IPV6_RECVHOPLIMIT               | ❔       | ❌     | ✅    | ❌      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
+| IP_RECVTTL                      | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | See [`udp::receive`](udp) |
+| IPV6_RECVHOPLIMIT               | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | See [`udp::receive`](udp) <br/><br/> IPV6_HOPLIMIT on Windows. |
 | IP_TOS                          | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | |
 | IPV6_TCLASS                     | ❔       | ❌     | ✅    | ❌      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | |
-| IP_RECVTOS                      | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ✅    | ❌   | |
-| IPV6_RECVTCLASS                 | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ✅    | ❌   | |
-| IP_RECVPKTINFO                  | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | IP_PKTINFO on Linux & Windows, IP_RECVDSTADDR+IP_RECVIF on MacOS & FreeBSD. |
-| IPV6_RECVPKTINFO                | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | IPV6_PKTINFO on Windows. |
+| IP_RECVTOS                      | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ✅    | ❌   | See [`udp::receive`](udp) |
+| IPV6_RECVTCLASS                 | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ✅    | ❌   | See [`udp::receive`](udp) |
+| IP_RECVPKTINFO                  | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | See [`udp::receive`](udp) <br/><br/> IP_PKTINFO on Linux & Windows, IP_RECVDSTADDR+IP_RECVIF on MacOS & FreeBSD. |
+| IPV6_RECVPKTINFO                | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | See [`udp::receive`](udp) <br/><br/> IPV6_PKTINFO on Windows. |
 | IP_DONTFRAG                     | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | IP_DONTFRAGMENT on Windows, implementable using IP_MTU_DISCOVER on Linux. |
 | IPV6_DONTFRAG                   | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ✅      | ✅    | ❌    | ✅    | ❌   | |
 | IP_MTU_DISCOVER                 | ❔       | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ❌    | ❌   | ❌      | ❌  | ✅      | ✅    | ✅    | ✅    | ❌   | |
