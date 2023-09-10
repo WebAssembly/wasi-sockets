@@ -151,7 +151,7 @@ Columns:
 | SO_DOMAIN                       | ✅       | ❌     | ✅    | ✅      | ❌     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::address-family`](tcp)<br/>[`udp::address-family`](udp) <br/><br/> SO_PROTOCOL_INFO on Windows. |
 | SO_TYPE                         | ✅*      | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ✅  | ✅      | ✅    | ✅    | ❌    | ✅   | * indirectly through the type of the socket resource. |
 | SO_PROTOCOL                     | ✅*      | ❌     | ✅    | ✅      | ❌     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | * indirectly through the type of the socket resource. SO_PROTOCOL_INFO on Windows. |
-| SO_ACCEPTCONN                   | ❔       | ✅     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
+| SO_ACCEPTCONN                   | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::is-listening`](tcp) |
 | IPV6_V6ONLY                     | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ✅      | ❌    | ✅    | ✅    | ✅   | [`tcp::(set-)ipv6-only`](tcp)<br/>[`udp::(set-)ipv6-only`](udp) |
 | IP_HDRINCL                      | ⛔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | Out of scope. Raw sockets only. |
 | IPV6_HDRINCL                    | ⛔       | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | Out of scope. Raw sockets only. |

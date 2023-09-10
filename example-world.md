@@ -1228,6 +1228,17 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <ul>
 <li><a name="remote_address.0"></a> result&lt;<a href="#ip_socket_address"><a href="#ip_socket_address"><code>ip-socket-address</code></a></a>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
+<h4><a name="is_listening"><code>is-listening: func</code></a></h4>
+<p>Whether the socket is listening for new connections.</p>
+<p>Equivalent to the SO_ACCEPTCONN socket option.</p>
+<h5>Params</h5>
+<ul>
+<li><a name="is_listening.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="is_listening.0"></a> <code>bool</code></li>
+</ul>
 <h4><a name="address_family"><code>address-family: func</code></a></h4>
 <p>Whether this is a IPv4 or IPv6 socket.</p>
 <p>Equivalent to the SO_DOMAIN socket option.</p>
