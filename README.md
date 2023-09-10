@@ -32,6 +32,7 @@ Phase 2
   - [Why not getaddrinfo?](#why-not-getaddrinfo)
   - [Security](#security)
   - [Deferred permission requests](#deferred-permission-requests)
+  - [TCP listen backlog](#tcp-listen-backlog)
 - [Considered alternatives](#considered-alternatives)
   - [[Alternative 1]](#alternative-1)
   - [[Alternative 2]](#alternative-2)
@@ -194,6 +195,25 @@ The most likely contenders for permission prompt interception are:
 - UDP: `connect`
 
 Now, again, this proposal does not specify if/how permission prompts should be implemented. However, it does at least facilitate the ability for runtimes to do so. Since waiting for user input takes an unknowable amount of time, the operations listed above have been made asynchronous. POSIX-compatibility layers can simply synchronously block on the returned `future`s.
+
+#### TCP listen backlog
+
+Although not part of the [official POSIX documentation](https://pubs.opengroup.org/onlinepubs/9699919799/functions/listen.html), multiple operating systems allow `listen` to be called multiple times:
+- The first invocation performs the actual listen and sets the initial backlog size.
+- Any future invocation just updates the backlog size.
+
+To simplify the WASI interface, these concerns have been split out into distinct functions:
+- `tcp-socket::listen` performs the actual listener transition, permission checks, etc. Additionally:
+    - is async
+    - can be called exactly once (successfully)
+    - can potentially return an "accept stream" in the future.
+- `tcp-socket::(set-)listen-backlog-size` behaves just like any other socket option
+    - is sync
+    - can be called multiple times
+    - on non-listening sockets, stashes the value on the internal socket instance, to be passed on to the native `listen` call part of `tcp-socket::listen`
+    - on already listening socket, calls out to the native `listen`
+
+With this design, it becomes possible to call: (1) `tcp-socket::listen` without a preceding `tcp-socket::set-listen-backlog-size`, and (2) `tcp-socket::listen-backlog-size` before `tcp-socket::set-listen-backlog-size`. For this reason, implementations are expected to pick a reasonable initial value.
 
 ### Considered alternatives
 

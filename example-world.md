@@ -1122,6 +1122,7 @@ implicitly bind the socket.</p>
 <ul>
 <li>this function is async. This enables interactive WASI hosts to inject permission prompts.</li>
 <li>the socket must already be explicitly bound.</li>
+<li>has no <code>backlog</code> parameter. See <a href="/README.md#tcp-listen-backlog">README</a> for more info.</li>
 </ul>
 <h1>Typical <code>start</code> errors</h1>
 <ul>
@@ -1267,8 +1268,10 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <ul>
 <li><a name="set_ipv6_only.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
-<h4><a name="set_listen_backlog_size"><code>set-listen-backlog-size: func</code></a></h4>
+<h4><a name="listen_backlog_size"><code>listen-backlog-size: func</code></a></h4>
 <p>Hints the desired listen queue size. Implementations are free to ignore this.</p>
+<p>This replaces the <code>backlog</code> parameter of the POSIX <code>listen</code> function.
+The expected semantics are described in the <a href="/README.md#tcp-listen-backlog">README</a>.</p>
 <h1>Typical errors</h1>
 <ul>
 <li><code>already-connected</code>:    (set) The socket is already in the Connection state.</li>
@@ -1276,8 +1279,17 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 </ul>
 <h5>Params</h5>
 <ul>
+<li><a name="listen_backlog_size.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="listen_backlog_size.0"></a> result&lt;<code>u32</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_listen_backlog_size"><code>set-listen-backlog-size: func</code></a></h4>
+<h5>Params</h5>
+<ul>
 <li><a name="set_listen_backlog_size.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
-<li><a name="set_listen_backlog_size.value"><code>value</code></a>: <code>u64</code></li>
+<li><a name="set_listen_backlog_size.value"><code>value</code></a>: <code>u32</code></li>
 </ul>
 <h5>Return values</h5>
 <ul>
