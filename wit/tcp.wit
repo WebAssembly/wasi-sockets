@@ -4,6 +4,9 @@ interface tcp {
 	use wasi:poll/poll.{pollable}
 	use network.{network, error-code, ip-socket-address, ip-address-family}
 
+	/// Amount of time in nanoseconds.
+	type timeout = u64
+
 	/// A TCP socket handle.
 	type tcp-socket = u32
 	
@@ -178,12 +181,53 @@ interface tcp {
 	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
 	set-listen-backlog-size: func(this: tcp-socket, value: u64) -> result<_, error-code>
 
-	/// Equivalent to the SO_KEEPALIVE socket option.
+	/// Enables or disables keepalive.
 	/// 
+	/// Equivalent to the SO_KEEPALIVE socket option.
+	///
+	/// The keepalive behavior can be adjusted using:
+	/// - `keep-alive-idle-time`
+	/// - `keep-alive-interval`
+	/// - `keep-alive-count`
+	/// These properties can be configured while `keep-alive` is disabled, but only come into effect when `keep-alive` is enabled.
+	///
 	/// # Typical errors
 	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
 	keep-alive: func(this: tcp-socket) -> result<bool, error-code>
 	set-keep-alive: func(this: tcp-socket, value: bool) -> result<_, error-code>
+
+	/// Amount of time the connection has to be idle before TCP starts sending keepalive packets.
+	/// 
+	/// Implementations may round and/or clamp the provided value to their supported precision and range.
+	/// 
+	/// Equivalent to the TCP_KEEPIDLE socket option. (TCP_KEEPALIVE on MacOS)
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	keep-alive-idle-time: func(this: tcp-socket) -> result<timeout, error-code>
+	set-keep-alive-idle-time: func(this: tcp-socket, value: timeout) -> result<_, error-code>
+
+	/// The time between keepalive packets.
+	/// 
+	/// Implementations may round and/or clamp the provided value to their supported precision and range.
+	/// 
+	/// Equivalent to the TCP_KEEPINTVL socket option.
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	keep-alive-interval: func(this: tcp-socket) -> result<timeout, error-code>
+	set-keep-alive-interval: func(this: tcp-socket, value: timeout) -> result<_, error-code>
+
+	/// The maximum amount of keepalive packets TCP should send before aborting the connection.
+	/// 
+	/// Implementations may round and/or clamp the provided value to their supported precision and range.
+	/// 
+	/// Equivalent to the TCP_KEEPCNT socket option.
+	/// 
+	/// # Typical errors
+	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
+	keep-alive-count: func(this: tcp-socket) -> result<u32, error-code>
+	set-keep-alive-count: func(this: tcp-socket, value: u32) -> result<_, error-code>
 
 	/// Equivalent to the TCP_NODELAY socket option.
 	/// 

@@ -176,9 +176,9 @@ Columns:
 | SO_RCVTIMEO                     | ⛔       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ❌      | ❌  | ✅      | ❌    | ✅    | ❌    | ❌   | WASI sockets are always non-blocking. Timeouts can be recreated in libc. |
 | SO_SNDTIMEO                     | ⛔       | ✅     | ❌    | ✅      | ✅     | ✅      | ❌    | ✅    | ✅   | ❌      | ❌  | ✅      | ❌    | ❌    | ❌    | ❌   | WASI sockets are always non-blocking. Timeouts can be recreated in libc. |
 | SO_KEEPALIVE                    | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ✅      | ✅    | ✅    | ❌    | ✅   | [`tcp::(set-)keep-alive`](tcp) |
-| TCP_KEEPCNT                     | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ❌  | ❌      | ✅    | ❌    | ❌    | ❌   | |
-| TCP_KEEPIDLE                    | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ✅    | ❌    | ❌   | TCP_KEEPALIVE on MacOS |
-| TCP_KEEPINTVL                   | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ✅    | ❌    | ❌   | |
+| TCP_KEEPCNT                     | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ❌  | ❌      | ✅    | ❌    | ❌    | ❌   | [`tcp::(set-)keep-alive-count`](tcp) |
+| TCP_KEEPIDLE                    | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ✅    | ❌    | ❌   | [`tcp::(set-)keep-alive-idle-time`](tcp) <br/><br/> TCP_KEEPALIVE on MacOS |
+| TCP_KEEPINTVL                   | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ❌      | ✅    | ✅    | ❌    | ❌   | [`tcp::(set-)keep-alive-interval`](tcp) |
 | TCP_NODELAY                     | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ✅      | ✅  | ✅      | ✅    | ✅    | ❌    | ✅   | [`tcp::(set-)no-delay`](tcp) |
 | TCP_CORK                        | ❔       | ❌     | ✅    | ❌      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ✅    | ❌    | ❌    | ✅   | TCP_NOPUSH on MacOS & FreeBSD |
 | SO_LINGER                       | ❔       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ✅      | ✅  | ✅      | ✅    | ❌    | ❌    | ❌   | |

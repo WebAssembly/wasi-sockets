@@ -115,7 +115,7 @@ combined with a couple of errors that are always possible:</p>
 <p>POSIX equivalent: ENOMEM, ENOBUFS, EAI_MEMORY</p>
 </li>
 <li>
-<p><a name="error_code.timeout"><code>timeout</code></a></p>
+<p><a name="error_code.timeout"><a href="#timeout"><code>timeout</code></a></a></p>
 <p>The operation timed out before it could finish completely.
 </li>
 <li>
@@ -993,8 +993,11 @@ be used.</p>
 #### <a name="ip_address_family">`type ip-address-family`</a>
 [`ip-address-family`](#ip_address_family)
 <p>
-#### <a name="tcp_socket">`type tcp-socket`</a>
-`u32`
+#### <a name="timeout">`type timeout`</a>
+`u64`
+<p>Amount of time in nanoseconds.
+<h4><a name="tcp_socket"><code>type tcp-socket</code></a></h4>
+<p><code>u32</code></p>
 <p>A TCP socket handle.
 <h4><a name="shutdown_type"><code>enum shutdown-type</code></a></h4>
 <h5>Enum Cases</h5>
@@ -1081,7 +1084,7 @@ implicitly bind the socket.</p>
 </ul>
 <h1>Typical <code>finish</code> errors</h1>
 <ul>
-<li><code>timeout</code>:                   Connection timed out. (ETIMEDOUT)</li>
+<li><a href="#timeout"><code>timeout</code></a>:                   Connection timed out. (ETIMEDOUT)</li>
 <li><code>connection-refused</code>:        The connection was forcefully rejected. (ECONNREFUSED)</li>
 <li><code>connection-reset</code>:          The connection was reset. (ECONNRESET)</li>
 <li><code>remote-unreachable</code>:        The remote address is not reachable. (EHOSTUNREACH, EHOSTDOWN, ENETUNREACH, ENETDOWN)</li>
@@ -1284,7 +1287,15 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <li><a name="set_listen_backlog_size.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
 <h4><a name="keep_alive"><code>keep-alive: func</code></a></h4>
+<p>Enables or disables keepalive.</p>
 <p>Equivalent to the SO_KEEPALIVE socket option.</p>
+<p>The keepalive behavior can be adjusted using:</p>
+<ul>
+<li><a href="#keep_alive_idle_time"><code>keep-alive-idle-time</code></a></li>
+<li><a href="#keep_alive_interval"><code>keep-alive-interval</code></a></li>
+<li><a href="#keep_alive_count"><code>keep-alive-count</code></a>
+These properties can be configured while <a href="#keep_alive"><code>keep-alive</code></a> is disabled, but only come into effect when <a href="#keep_alive"><code>keep-alive</code></a> is enabled.</li>
+</ul>
 <h1>Typical errors</h1>
 <ul>
 <li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
@@ -1306,6 +1317,84 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <h5>Return values</h5>
 <ul>
 <li><a name="set_keep_alive.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="keep_alive_idle_time"><code>keep-alive-idle-time: func</code></a></h4>
+<p>Amount of time the connection has to be idle before TCP starts sending keepalive packets.</p>
+<p>Implementations may round and/or clamp the provided value to their supported precision and range.</p>
+<p>Equivalent to the TCP_KEEPIDLE socket option. (TCP_KEEPALIVE on MacOS)</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="keep_alive_idle_time.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="keep_alive_idle_time.0"></a> result&lt;<a href="#timeout"><a href="#timeout"><code>timeout</code></a></a>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_keep_alive_idle_time"><code>set-keep-alive-idle-time: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_keep_alive_idle_time.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_keep_alive_idle_time.value"><code>value</code></a>: <a href="#timeout"><a href="#timeout"><code>timeout</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_keep_alive_idle_time.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="keep_alive_interval"><code>keep-alive-interval: func</code></a></h4>
+<p>The time between keepalive packets.</p>
+<p>Implementations may round and/or clamp the provided value to their supported precision and range.</p>
+<p>Equivalent to the TCP_KEEPINTVL socket option.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="keep_alive_interval.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="keep_alive_interval.0"></a> result&lt;<a href="#timeout"><a href="#timeout"><code>timeout</code></a></a>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_keep_alive_interval"><code>set-keep-alive-interval: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_keep_alive_interval.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_keep_alive_interval.value"><code>value</code></a>: <a href="#timeout"><a href="#timeout"><code>timeout</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_keep_alive_interval.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="keep_alive_count"><code>keep-alive-count: func</code></a></h4>
+<p>The maximum amount of keepalive packets TCP should send before aborting the connection.</p>
+<p>Implementations may round and/or clamp the provided value to their supported precision and range.</p>
+<p>Equivalent to the TCP_KEEPCNT socket option.</p>
+<h1>Typical errors</h1>
+<ul>
+<li><code>concurrency-conflict</code>: (set) A <code>bind</code>, <code>connect</code> or <code>listen</code> operation is already in progress. (EALREADY)</li>
+</ul>
+<h5>Params</h5>
+<ul>
+<li><a name="keep_alive_count.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="keep_alive_count.0"></a> result&lt;<code>u32</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+</ul>
+<h4><a name="set_keep_alive_count"><code>set-keep-alive-count: func</code></a></h4>
+<h5>Params</h5>
+<ul>
+<li><a name="set_keep_alive_count.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_keep_alive_count.value"><code>value</code></a>: <code>u32</code></li>
+</ul>
+<h5>Return values</h5>
+<ul>
+<li><a name="set_keep_alive_count.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
 <h4><a name="no_delay"><code>no-delay: func</code></a></h4>
 <p>Equivalent to the TCP_NODELAY socket option.</p>
