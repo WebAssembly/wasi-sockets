@@ -155,8 +155,8 @@ Columns:
 | IPV6_V6ONLY                     | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ✅  | ✅      | ❌    | ✅    | ✅    | ✅   | [`tcp::(set-)ipv6-only`](tcp)<br/>[`udp::(set-)ipv6-only`](udp) |
 | IP_HDRINCL                      | ⛔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | Out of scope. Raw sockets only. |
 | IPV6_HDRINCL                    | ⛔       | ❌     | ✅    | ✅      | ❌     | ❌      | ❌    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | Out of scope. Raw sockets only. |
-| IP_TTL                          | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)unicast-hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
-| IPV6_UNICAST_HOPS               | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)unicast-hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
+| IP_TTL                          | ✅       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ✅   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
+| IPV6_UNICAST_HOPS               | ✅       | ✅     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ✅      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | [`tcp::(set-)hop-limit`](tcp)<br/>[`udp::(set-)unicast-hop-limit`](udp) |
 | IP_RECVTTL                      | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
 | IPV6_RECVHOPLIMIT               | ❔       | ❌     | ✅    | ❌      | ✅     | ✅      | ❌    | ❌    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ❌   | |
 | IP_TOS                          | ❔       | ❌     | ✅    | ✅      | ✅     | ✅      | ✅    | ✅    | ❌   | ❌      | ❌  | ❌      | ❌    | ❌    | ❌    | ✅   | |

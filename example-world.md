@@ -1331,7 +1331,7 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 <ul>
 <li><a name="set_no_delay.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
-<h4><a name="unicast_hop_limit"><code>unicast-hop-limit: func</code></a></h4>
+<h4><a name="hop_limit"><code>hop-limit: func</code></a></h4>
 <p>Equivalent to the IP_TTL &amp; IPV6_UNICAST_HOPS socket options.</p>
 <h1>Typical errors</h1>
 <ul>
@@ -1341,21 +1341,21 @@ a pair of streams that can be used to read &amp; write to the connection.</p>
 </ul>
 <h5>Params</h5>
 <ul>
-<li><a name="unicast_hop_limit.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="hop_limit.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
 </ul>
 <h5>Return values</h5>
 <ul>
-<li><a name="unicast_hop_limit.0"></a> result&lt;<code>u8</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+<li><a name="hop_limit.0"></a> result&lt;<code>u8</code>, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
-<h4><a name="set_unicast_hop_limit"><code>set-unicast-hop-limit: func</code></a></h4>
+<h4><a name="set_hop_limit"><code>set-hop-limit: func</code></a></h4>
 <h5>Params</h5>
 <ul>
-<li><a name="set_unicast_hop_limit.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
-<li><a name="set_unicast_hop_limit.value"><code>value</code></a>: <code>u8</code></li>
+<li><a name="set_hop_limit.this"><code>this</code></a>: <a href="#tcp_socket"><a href="#tcp_socket"><code>tcp-socket</code></a></a></li>
+<li><a name="set_hop_limit.value"><code>value</code></a>: <code>u8</code></li>
 </ul>
 <h5>Return values</h5>
 <ul>
-<li><a name="set_unicast_hop_limit.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
+<li><a name="set_hop_limit.0"></a> result&lt;_, <a href="#error_code"><a href="#error_code"><code>error-code</code></a></a>&gt;</li>
 </ul>
 <h4><a name="receive_buffer_size"><code>receive-buffer-size: func</code></a></h4>
 <p>The kernel buffer space reserved for sends/receives on this socket.</p>

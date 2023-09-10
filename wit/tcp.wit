@@ -198,8 +198,8 @@ interface tcp {
 	/// - `already-connected`:    (set) The socket is already in the Connection state.
 	/// - `already-listening`:    (set) The socket is already in the Listener state.
 	/// - `concurrency-conflict`: (set) A `bind`, `connect` or `listen` operation is already in progress. (EALREADY)
-	unicast-hop-limit: func(this: tcp-socket) -> result<u8, error-code>
-	set-unicast-hop-limit: func(this: tcp-socket, value: u8) -> result<_, error-code>
+	hop-limit: func(this: tcp-socket) -> result<u8, error-code>
+	set-hop-limit: func(this: tcp-socket, value: u8) -> result<_, error-code>
 
 	/// The kernel buffer space reserved for sends/receives on this socket.
 	/// 
