@@ -204,39 +204,41 @@ stateDiagram-v2
     [*] --> TCP_INIT: tcpSocketCreate()
     [*] --> TCP_CONNECTION: accept()
     TCP_INIT --> TCP_BIND: startBind()
-    TCP_BIND --> TCP_BIND_READY: granted
-    TCP_BIND --> TCP_INIT: denied
-    TCP_BIND_READY --> TCP_BOUND: finishBind()
-    TCP_BIND_READY --> TCP_ERROR: finishBind() error
+    TCP_BIND --> TCP_BIND: finishBind() ("would block")
+    TCP_BIND --> TCP_BIND_READY: ready for finishBind()
+    TCP_BIND_READY --> TCP_INIT: finishBind() permission denied
+    TCP_BIND_READY --> TCP_BOUND: finishBind() ok
+    TCP_BIND_READY --> TCP_ERROR: finishBind() bind error
     TCP_INIT --> TCP_CONNECT: startConnect()
     TCP_BOUND --> TCP_CONNECT: startConnect()
-    TCP_CONNECT --> TCP_CONNECT_READY: granted
-    TCP_CONNECT --> TCP_INIT: denied
-    TCP_CONNECT --> TCP_BOUND: denied
-    TCP_CONNECT_READY --> TCP_CONNECTION: finishConnect()
-    TCP_CONNECT_READY --> TCP_ERROR: finishConnect() error
+    TCP_CONNECT --> TCP_CONNECT: finishConnect() ("would block")
+    TCP_CONNECT --> TCP_CONNECT_READY: ready for finishConnect()
+    TCP_CONNECT_READY --> TCP_INIT: finishConnect() permission denied
+    TCP_CONNECT_READY --> TCP_CONNECTION: finishConnect() ok
+    TCP_CONNECT_READY --> TCP_ERROR: finishConnect() connect error
     TCP_BOUND --> TCP_LISTEN: startListen()
-    TCP_LISTEN --> TCP_LISTEN_READY: granted
-    TCP_LISTEN --> TCP_BOUND: denied
-    TCP_LISTEN_READY --> TCP_LISTENER: finishListen()
-    TCP_LISTEN_READY --> TCP_ERROR: finishListen() error
+    TCP_LISTEN --> TCP_LISTEN: finishListen() ("would block")
+    TCP_LISTEN --> TCP_LISTEN_READY: ready for finishListen()
+    TCP_LISTEN_READY --> TCP_INIT: finishListen() permission denied
+    TCP_LISTEN_READY --> TCP_LISTENER: finishListen() ok
+    TCP_LISTEN_READY --> TCP_ERROR: finishListen() listen error
     TCP_CONNECTION --> TCP_CONNECTION: shutdown()
     TCP_CONNECTION --> TCP_ERROR: socket error
     TCP_CONNECTION --> TCP_CLOSED: socket close
     TCP_LISTENER --> TCP_ERROR: socket error
     TCP_LISTENER --> TCP_CLOSED: socket close
 
-    TCP_BIND: TCP_BIND [WAIT]
-    TCP_CONNECT: TCP_CONNECT [WAIT]
-    TCP_LISTEN: TCP_LISTEN [WAIT]
-    TCP_LISTENER: TCP_LISTENER [WAIT]
+    TCP_BIND: TCP_BIND <WAIT>
+    TCP_CONNECT: TCP_CONNECT <WAIT>
+    TCP_LISTEN: TCP_LISTEN <WAIT>
+    TCP_LISTENER: TCP_LISTENER <WAIT>
 ```
 
 where the given methods synchronously transition the state when they are called. All method calls not on these state transition paths throw `invalid-state` while remaining in the current state, therefore always being recoverable by not transitioning the socket into the error state. Permission denied errors are retriable if the permissions dynamically change, and do not transition into the socket error state.
 
-The `TCP_CONNECT_READY` and `TCP_LISTEN_READY` states should eagerly handle socket connection and socket listen calls respectively, so that the finish calls represent completion of the asynchronous operation. Implementations may perform blocking connect and listen in the `connectFinish` and `listenFinish` calls, but this is discouraged.
+The `TCP_CONNECT` and `TCP_LISTEN` states should eagerly handle socket connection and socket listen calls respectively, so that the finish calls represent completion of the asynchronous operation. Implementations may perform blocking connect and listen in the `connectFinish` and `listenFinish` calls if necessary, but this is discouraged.
 
-The state of the pollable for the TCP state machine is `RESOLVED` in every state, except for when transitioning into those states with `[WAIT]` on them - `TCP_BIND`, `TCP_CONNECT`, `TCP_LISTEN` and `TCP_LISTENER`. These correspond to states that can be polled on for their transition into another state that is resolved. The `TCP_LISTENER` state is the only one where the state of the pollable is the state of the underlying socket. It will be `RESOLVED` if there is a pending backlog, and `WAIT` otherwise. This means it is possible for the `finishListen()` call to instantaneously transition the pollable back to resolved from the initial wait state of resolving into `TCP_LISTENER`. In the `TCP_CONECTION` state, data IO on the socket streams does not affect the pollable state on the socket resource, and because the pollable is resolved in this state, the socket close and error events are not pollable.
+The state of the pollable for the TCP state machine is `RESOLVED` in every state, except for when transitioning into those states with `<WAIT>` on them - `TCP_BIND`, `TCP_CONNECT`, `TCP_LISTEN` and `TCP_LISTENER`. These correspond to states that can be polled on for their transition into another state that is resolved. The `TCP_LISTENER` state is the only one where the state of the pollable is the state of the underlying socket. It will be `RESOLVED` if there is a pending backlog, and `WAIT` otherwise. This means it is possible for the `finishListen()` call to instantaneously transition the pollable back to resolved from the initial wait state of resolving into `TCP_LISTENER`. In the `TCP_CONECTION` state, data IO on the socket streams does not affect the pollable state on the socket resource, and because the pollable is resolved in this state, the socket close and error events are not pollable.
 
 The TCP socket can be dropped in all states, performing the necessary cleanup. There are no traps associated with any state transitions.
 
