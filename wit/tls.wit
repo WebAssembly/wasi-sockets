@@ -1,0 +1,309 @@
+interface tls {
+    use wasi:io/streams@0.2.0.{input-stream, output-stream};
+    use wasi:io/poll@0.2.0.{pollable};
+
+    /// TLS protocol version.
+    ///
+    /// At the time of writing, these are the existing TLS versions:
+    /// - 0x0200: SSLv2 (Deprecated)
+    /// - 0x0300: SSLv3 (Deprecated)
+    /// - 0x0301: TLSv1.0 (Deprecated)
+    /// - 0x0302: TLSv1.1 (Deprecated)
+    /// - 0x0303: TLSv1.2
+    /// - 0x0304: TLSv1.3
+    ///
+    /// TODO: Want to use regular WIT `enum` type, but then adding a new protocol is backwards incompatible.
+    type protocol-version = u16;
+
+    /// Application-Layer Protocol Negotiation (ALPN) protocol ID.
+    ///
+    /// ALPN IDs are between 1 and 255 bytes long. Typically, they represent the
+    /// binary encoding of an ASCII string (e.g. `[0x68 0x32]` for `"h2"`),
+    /// though this is not required.
+    type alpn-id = list<u8>;
+
+    /// A X509 certificate chain; starting with the end-entity's certificate
+    /// followed by 0 or more intermediate certificates.
+    resource public-identity {
+        export-X509-chain: func() -> list<list<u8>>;
+    }
+
+    /// The combination of a private key with its public certificate(s).
+    /// The private key data can not be exported.
+    resource private-identity {
+        /// TODO: find a way to "preopen" these private-identity resources, so that the sensitive private key data never has to flow through the guest.
+        parse: static func(private-key: list<u8>, x509-chain: list<list<u8>>) -> result<private-identity>;
+
+        public-identity: func() -> public-identity;
+    }
+
+    /// Resource to configure, control & observe a TLS client stream.
+    /// 
+    /// # Transform stream
+    /// A TLS client resource does not perform any I/O on its own. It is a pure
+    /// stream transformer that takes cleartext data on one side and emits
+    /// secured TLS data on the other side and vice-versa.
+    /// The user of this resource is responsible for continually
+    /// "pumping" the data from the underlying socket into the TLS client's
+    /// `public-output` stream and the `public-input` back into the socket.
+    ///
+    /// # Usage
+    /// The general usage pattern looks something like this:
+    /// - Instantiate new `client`.
+    /// - (Optional) Further refine the settings using the various `configure-*` methods.
+    /// - Forward the "public" streams acquired in the previous step into the underlying socket.
+    /// - Call `resume`.
+    /// - Read & write application data into the "private" streams.
+    ///
+    /// # Suspend / resume
+    /// A `client` always starts out suspended. During this initial suspension
+    /// the various `configure-*` methods may be called. After configuration,
+    /// the TLS handshake must be manually initiated using the `resume` method.
+    ///
+    /// Many TLS libraries let users provide custom behavior through the
+    /// registration of callbacks. The WebAssembly Component Model does not
+    /// support callbacks. Instead, these customization points are modeled as
+    /// additional suspensions.
+    ///
+    /// The `suspend-at` parameter of the `connect` constructor controls at which
+    /// moments during the lifetime of the TLS stream the client should
+    /// automatically suspend itself.
+    ///
+    /// The consumer drives this transition using the `suspend` method. If the
+    /// client is not ready to be suspended, the pollable returned by `subscribe`
+    /// can be used to wait for its readiness. When `suspend` succeeds, the client
+    /// is suspended and some settings are open for configuration again. Once
+    /// ready to continue the connection, the consumer should call `resume`.
+    ///
+    /// In general:
+    /// - While a client is suspended, no data flows through the I/O streams.
+    /// - A client may only be configured while it is suspended.
+    ///
+    /// # Secure by default
+    /// Implementations should pick reasonably safe defaults for all security related
+    /// settings. Users of this interface should be able to confidently instantiate
+    /// a new `client` and then, without further configuration, immediately
+    /// initiate the handshake.
+    resource client {
+        /// Create a new suspended TLS client.
+        constructor(server-name: string, suspend-at: client-suspension-points);
+        
+        /// Obtain the I/O streams associated with this client.
+        /// These must be obtained exactly once, before the first call to `resume`.
+        ///
+        /// Returns an error if they were already obtained before.
+        ///
+        /// The I/O streams are child resources of the client. They must be
+        /// dropped before the client is dropped.
+        streams: func() -> result<io-streams>;
+
+
+
+
+
+        /// Configure the ALPN IDs for this client to adertise to the server,
+        /// in descending order of preference.
+        ///
+        /// This may only be configured while suspended in the `constructed` phase.
+        configure-alpn-ids: func(value: list<alpn-id>) -> result;
+        
+        /// Configure the client certificates, in descending order of preference.
+        ///
+        /// If the server requests a certificate from the client,
+        /// the TLS implementation will consult this list of configured identities
+        /// in the provided order and pick the first one that satisfies the
+        /// constraints sent by the server. If there was no match, then by default
+        /// it is up to the server to decide whether to continue or abort the connection.
+        ///
+        /// This may only be configured while suspended in the `constructed`,
+        /// `verify-server-identity` or `select-client-identity` phases.
+        configure-identities: func(value: list<borrow<private-identity>>) -> result;
+
+
+
+
+
+        /// The server name that was provided during construction of this client.
+        server-name: func() -> string;
+
+        /// The negotiated ALPN ID, if any.
+        ///
+        /// Returns `none` when:
+        /// - the handshake did not take place yet,
+        /// - the client did not advertise any ALPN IDs,
+        /// - a successful handshake has occurred, but there was no intersection
+        ///   between the IDs advertised by the client and the IDs supported by
+        ///   the server. 
+        alpn-id: func() -> option<alpn-id>;
+        
+        /// The negotiated TLS protocol version.
+        ///
+        /// Returns `none` if the handshake did not take place yet.
+        protocol-version: func() -> option<protocol-version>;
+
+        /// The client's identity advertised to the server, if any.
+        /// This will be one of the identities configured using `configure-identities`.
+        ///
+        /// This becomes available _after_ the `select-client-identity` phase.
+        /// 
+        /// Returns `none` when:
+        /// - the handshake did not take place yet,
+        /// - the server did not request a client certificate,
+        /// - the server did request a client certificate, but there was no match
+        ///   with the configured identities.
+        client-identity: func() -> option<private-identity>;
+
+        /// The validated certificate of the server.
+        ///
+        /// This becomes available _after_ the `verify-server-identity` phase.
+        server-identity: func() -> option<public-identity>;
+
+
+
+
+
+        /// Attempt to suspend the client at one of the places specified by
+        /// `suspend-at` during construction of the client.
+        ///
+        /// Returns `error(not-ready)` if the client is not ready to be suspended.
+        /// Use the pollable returned by `subscribe` to wait for its readiness.
+        /// 
+        /// Returns `error(already-suspended)` is already suspended.
+        ///
+        /// Returns `error(closed)` if the connection has shut down either
+        /// successfully or abornmally.
+        ///
+        /// The suspension resource is a child resource of the client. Dropping
+        /// the `client` while it still has an active suspension resource may trap.
+        suspend: func() -> result<client-suspension, suspend-error>;
+
+        /// Resume the suspended client. Returns an error if the client is not
+        /// suspended.
+        /// 
+        /// If the client was suspended though `suspend` (i.e. it is not the
+        /// initial resumption), this method will trap if the suspension
+        /// resource hasn't been dropped yet.
+        ///
+        /// Returns an error if the client is not suspended.
+        resume: func() -> result;
+
+        /// Create a `pollable` which can be used to poll for
+        /// the client to be suspendable or closed.
+        ///
+        /// `subscribe` only has to be called once per client and can be (re)used
+        /// for the remainder of the client's lifetime.
+        subscribe: func() -> pollable;
+    }
+
+    /// The I/O streams that represent both sides of the transform.
+    ///
+    /// The application side interacts with the cleartext "private" streams.
+    /// The network side interacts with the encrypted "public" streams.
+    ///
+    /// A typical setup looks something like this:
+    /// 
+    /// ```text
+    /// :    TCP Socket                              TLS Client/Server
+    /// +-----------------+            +---------------------------------------------+
+    /// |                 |   splice   |                 decryption                  |   read
+    /// |  `input-stream` | ========>> | `public-output` =========>> `private-input` | ======>>   your
+    /// |                 |            |                                             |            app
+    /// |                 |            |                                             |            lives
+    /// | `output-stream` | <<======== | `public-input` <<========= `private-output` | <<======   here
+    /// |                 |   splice   |                 encryption                  |   write
+    /// +-----------------+            +---------------------------------------------+
+    /// ```
+    ///
+    /// The user of this interface is responsible for continually forwarding
+    /// data from the socket into the `public-output` stream and
+    /// data from the `public-input` into the socket.
+    ///
+    /// # Caution
+    /// Because the guest acts as both the producer and the consumer for these
+    /// streams, do not use the `blocking_*` methods as that will deadlock yourself.
+    record io-streams {
+        public-input: input-stream,
+        public-output: output-stream,
+        private-output: output-stream,
+        private-input: input-stream,
+    }
+
+    flags client-suspension-points {
+        /// When the client received the server's certificate.
+        verify-server-identity,
+
+        /// When the client received a certificate request from the server.
+        select-client-identity,
+
+        /// When the initial handshake was successful.
+        connected,
+    }
+
+    resource client-suspension {
+        /// At which point the TLS stream is suspended.
+        /// Exactly one flag is set in the return value.
+        at: func() -> client-suspension-points;
+
+        /// Only for select-client-identity:
+        // TODO: acceptable-authorities: func() -> result<list<string>>;
+        
+        /// Only for verify-server-identity:
+        // TODO: unverified-identity: func() -> result<public-identity>;
+    }
+
+    enum suspend-error {
+        not-ready,
+        already-suspended,
+        closed,
+    }
+
+
+
+
+
+
+
+
+
+    // TODO
+    resource server {
+        constructor(suspend-at: server-suspension-points);
+        streams: func() -> result<io-streams>;
+
+        configure-alpn-ids: func(value: list<alpn-id>) -> result;
+        configure-identities: func(value: list<borrow<private-identity>>) -> result;
+
+        server-name: func() -> option<string>;
+        alpn-id: func() -> option<alpn-id>;
+        protocol-version: func() -> option<protocol-version>;
+        client-identity: func() -> option<public-identity>;
+        server-identity: func() -> option<private-identity>;
+
+        suspend: func() -> result<server-suspension, suspend-error>;
+        resume: func() -> result;
+        subscribe: func() -> pollable;
+    }
+
+    flags server-suspension-points {
+        /// When the server received the initial message from the client.
+        client-hello,
+
+        /// When the server received the client's certificate.
+        verify-client-identity,
+
+        /// When the initial handshake was successful.
+        accepted,
+    }
+
+    resource server-suspension {
+        at: func() -> server-suspension-points;
+
+        /// Only for client-hello:
+        // TODO: requested-protocol-versions: func() -> result<list<protocol-version>>;
+        // TODO: requested-server-name: func() -> result<option<string>>;
+        // TODO: requested-alpn-ids: func() -> result<list<alpn-id>>;
+
+        /// Only for verify-client-identity:
+        // TODO: unverified-identity: func() -> result<public-identity>;
+    }
+}
