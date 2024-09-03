@@ -15,6 +15,18 @@ interface tls {
     /// TODO: Want to use regular WIT `enum` type, but then adding a new protocol is backwards incompatible.
     type protocol-version = u16;
 
+    /// TLS Cipher suite.
+    ///
+    /// These are maintained by IANA. Examples:
+    /// - 0x1301: TLS_AES_128_GCM_SHA256
+    /// - 0x1302: TLS_AES_256_GCM_SHA384
+    /// - 0xC030: TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+    /// - 0xC02B: TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+    /// - etc.
+    /// 
+    /// See: <https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-4>
+    type cipher-suite = u16;
+
     /// Application-Layer Protocol Negotiation (ALPN) protocol ID.
     ///
     /// ALPN IDs are between 1 and 255 bytes long. Typically, they represent the
@@ -32,278 +44,441 @@ interface tls {
     /// The private key data can not be exported.
     resource private-identity {
         /// TODO: find a way to "preopen" these private-identity resources, so that the sensitive private key data never has to flow through the guest.
+        /// TODO: specify which exact binary format
         parse: static func(private-key: list<u8>, x509-chain: list<list<u8>>) -> result<private-identity>;
 
         public-identity: func() -> public-identity;
     }
 
-    /// Resource to configure, control & observe a TLS client stream.
-    /// 
-    /// # Transform stream
-    /// A TLS client resource does not perform any I/O on its own. It is a pure
-    /// stream transformer that takes cleartext data on one side and emits
-    /// secured TLS data on the other side and vice-versa.
-    /// The user of this resource is responsible for continually
-    /// "pumping" the data from the underlying socket into the TLS client's
-    /// `public-output` stream and the `public-input` back into the socket.
+
+
+    /// A TLS client connection.
+    ///
+    /// The various properties on this type become available as the handshake
+    /// progresses.
+    ///
+    /// # Design
+    /// TLS connections can be divided up into roughly two phases: the handshake
+    /// phase and the bulk data transfer phase. (TLS renegotiation is not exposed
+    /// in this interface.)
+    /// By far, most of the API complexity is in the handshake phase, which has
+    /// been split off into a separate `client-handshake` type. The
+    /// `client-handshake` is used to configure and control advanced (but optional)
+    /// operations such as custom server certificate validation
+    /// and client certificate selection. Once the `client-handshake` has been
+    /// set up appropriately, the handshake can be completed using the `finish`
+    /// method. That consumes the `client-handshake` and gives a pair of
+    /// cleartext streams back in return.
+    ///
+    /// The `client-connection` and its handshake resource don't not perform
+    /// any I/O on their own. It is a pure stream "wrapper" that consumes raw
+    /// TLS data streams and exposes cleartext streams.
+    /// The `input` and `output` parameters of constructor map to the
+    /// raw TLS data streams and are typically obtained from a WASI TCP socket.
+    /// The `client-handshake::finish` method returns the cleartext streams.
+    ///
+    /// ## Consumer drives the handshake
+    /// Many TLS libraries let users inject custom behavior at various points
+    /// of interest through the registration of callbacks.
+    /// The WebAssembly Component Model does not support callbacks. Instead, the
+    /// WASI TLS interface exposes direct-style APIs for the consumer to actively
+    /// drive the handshake forwards.
+    ///
+    /// The `client-handshake` starts out "suspended". The consumer then drives
+    /// the handshake to the next point of interest. For example using the
+    /// `verify-server-identity` method. Calling it:
+    /// - resumes the handshake,
+    /// - asynchronously waits for the server to send its certificate
+    /// - upon receipt suspends the handshake again
+    /// - resolves the returned future.
+    /// It is then back up to the consumer to drive the handshake along to the
+    /// next point of interest (e.g. `receive-client-identity-request`)
+    /// or finish the handshake entirely (`finish`).
+    ///
+    /// No data flows through the I/O streams while a client-handshake is suspended.
     ///
     /// # Usage
-    /// The general usage pattern looks something like this:
-    /// - Instantiate new `client`.
-    /// - (Optional) Further refine the settings using the various `configure-*` methods.
-    /// - Forward the "public" streams acquired in the previous step into the underlying socket.
-    /// - Call `resume`.
-    /// - Read & write application data into the "private" streams.
+    /// The general usage pattern looks like this:
+    /// - Construct a new connection using the `client-connection` constructor.
+    /// - Obtain the handshake resource using `client-connection::connect`. The
+    ///   handshake starts out suspended.
+    /// - (Optional) Further refine the settings using the various
+    ///              `configure-*` methods. These may only be called while the
+    ///              handshake is suspended.
+    /// - (Optional) Resume the handshake and wait for the server to send its
+    ///              certificate using: `verify-server-identity`.
+    /// - (Optional) Resume the handshake and wait for the server to send a
+    ///              client certificate request using: `receive-client-identity-request`.
+    /// - Resume and run the handshake to completion using: `finish`.
+    /// - Read & write application data into the streams returned by `finish`.
     ///
-    /// # Suspend / resume
-    /// A `client` always starts out suspended. During this initial suspension
-    /// the various `configure-*` methods may be called. After configuration,
-    /// the TLS handshake must be manually initiated using the `resume` method.
+    /// The optional steps must happen in the order as defined above.
     ///
-    /// Many TLS libraries let users provide custom behavior through the
-    /// registration of callbacks. The WebAssembly Component Model does not
-    /// support callbacks. Instead, these customization points are modeled as
-    /// additional suspensions.
+    /// ## Example
+    /// A minimal, but production-ready, example in pseudocode:
+    /// ```text
+    /// let conn = new client-connection(tcp-input, tcp-output);
+    /// let (tls-input, tls-output) = conn.connect("example.com").finish().await?;
+    /// ```
     ///
-    /// The `suspend-at` parameter of the `connect` constructor controls at which
-    /// moments during the lifetime of the TLS stream the client should
-    /// automatically suspend itself.
-    ///
-    /// The consumer drives this transition using the `suspend` method. If the
-    /// client is not ready to be suspended, the pollable returned by `subscribe`
-    /// can be used to wait for its readiness. When `suspend` succeeds, the client
-    /// is suspended and some settings are open for configuration again. Once
-    /// ready to continue the connection, the consumer should call `resume`.
-    ///
-    /// In general:
-    /// - While a client is suspended, no data flows through the I/O streams.
-    /// - A client may only be configured while it is suspended.
+    /// This assumes `tcp-input` and `tcp-output` are input/output streams
+    /// obtained from e.g. `tcp-socket::connect`.
     ///
     /// # Secure by default
-    /// Implementations should pick reasonably safe defaults for all security related
-    /// settings. Users of this interface should be able to confidently instantiate
-    /// a new `client` and then, without further configuration, immediately
-    /// initiate the handshake.
-    resource client {
-        /// Create a new suspended TLS client.
-        constructor(server-name: string, suspend-at: client-suspension-points);
-        
-        /// Obtain the I/O streams associated with this client.
-        /// These must be obtained exactly once, before the first call to `resume`.
+    /// Implementations should pick reasonably safe defaults for all security
+    /// related settings. Users of this interface should be able to confidently
+    /// instantiate a new client connection and then, without further configuration,
+    /// immediately initiate the handshake. As demonstrated in the example above.
+    resource client-connection {
+        // TODO: handle post-handshake client certificate requests.
+        // TODO: graceful shutdown
+
+        /// Create a new connection instance that wraps the provided
+        /// raw TLS data streams.
+        constructor(input: input-stream, output: output-stream);
+
+        /// Create a new client handshake. This method may be called at most once.
+        /// This method itself does not perform any I/O. Use the returned resource
+        /// to actually drive the handshake forwards.
         ///
-        /// Returns an error if they were already obtained before.
-        ///
-        /// The I/O streams are child resources of the client. They must be
-        /// dropped before the client is dropped.
-        streams: func() -> result<io-streams>;
+        /// The returned `client-handshake` is a child resources of the `client-connection`.
+        connect: func(server-name: string) -> result<client-handshake>;
 
 
-
-
-
-        /// Configure the ALPN IDs for this client to adertise to the server,
-        /// in descending order of preference.
-        ///
-        /// This may only be configured while suspended in the `constructed` phase.
-        configure-alpn-ids: func(value: list<alpn-id>) -> result;
-        
-        /// Configure the client certificates, in descending order of preference.
-        ///
-        /// If the server requests a certificate from the client,
-        /// the TLS implementation will consult this list of configured identities
-        /// in the provided order and pick the first one that satisfies the
-        /// constraints sent by the server. If there was no match, then by default
-        /// it is up to the server to decide whether to continue or abort the connection.
-        ///
-        /// This may only be configured while suspended in the `constructed`,
-        /// `verify-server-identity` or `select-client-identity` phases.
-        configure-identities: func(value: list<borrow<private-identity>>) -> result;
-
-
-
-
-
-        /// The server name that was provided during construction of this client.
-        server-name: func() -> string;
+        /// The server name that was provided to `connect`.
+        server-name: func() -> option<string>;
 
         /// The negotiated ALPN ID, if any.
         ///
         /// Returns `none` when:
-        /// - the handshake did not take place yet,
-        /// - the client did not advertise any ALPN IDs,
-        /// - a successful handshake has occurred, but there was no intersection
-        ///   between the IDs advertised by the client and the IDs supported by
-        ///   the server. 
+        /// - the client did not advertise any ALPN IDs, or:
+        /// - there was no intersection between the IDs advertised by the client
+        ///   and the IDs supported by the server. 
         alpn-id: func() -> option<alpn-id>;
-        
-        /// The negotiated TLS protocol version.
-        ///
-        /// Returns `none` if the handshake did not take place yet.
-        protocol-version: func() -> option<protocol-version>;
 
         /// The client's identity advertised to the server, if any.
-        /// This will be one of the identities configured using `configure-identities`.
+        /// This will be one of the identities passed to
+        /// `client-identity-request::respond`.
         ///
-        /// This becomes available _after_ the `select-client-identity` phase.
-        /// 
         /// Returns `none` when:
-        /// - the handshake did not take place yet,
         /// - the server did not request a client certificate,
         /// - the server did request a client certificate, but there was no match
         ///   with the configured identities.
         client-identity: func() -> option<private-identity>;
 
-        /// The validated certificate of the server.
-        ///
-        /// This becomes available _after_ the `verify-server-identity` phase.
+        /// The verified certificate of the server.
         server-identity: func() -> option<public-identity>;
 
+        /// The negotiated TLS protocol version.
+        protocol-version: func() -> option<protocol-version>;
 
-
-
-
-        /// Attempt to suspend the client at one of the places specified by
-        /// `suspend-at` during construction of the client.
-        ///
-        /// Returns `error(not-ready)` if the client is not ready to be suspended.
-        /// Use the pollable returned by `subscribe` to wait for its readiness.
-        /// 
-        /// Returns `error(already-suspended)` is already suspended.
-        ///
-        /// Returns `error(closed)` if the connection has shut down either
-        /// successfully or abornmally.
-        ///
-        /// The suspension resource is a child resource of the client. Dropping
-        /// the `client` while it still has an active suspension resource may trap.
-        suspend: func() -> result<client-suspension, suspend-error>;
-
-        /// Resume the suspended client. Returns an error if the client is not
-        /// suspended.
-        /// 
-        /// If the client was suspended though `suspend` (i.e. it is not the
-        /// initial resumption), this method will trap if the suspension
-        /// resource hasn't been dropped yet.
-        ///
-        /// Returns an error if the client is not suspended.
-        resume: func() -> result;
-
-        /// Create a `pollable` which can be used to poll for
-        /// the client to be suspendable or closed.
-        ///
-        /// `subscribe` only has to be called once per client and can be (re)used
-        /// for the remainder of the client's lifetime.
-        subscribe: func() -> pollable;
+        /// The negotiated cipher suite.
+        cipher-suite: func() -> option<cipher-suite>;
     }
 
-    /// The I/O streams that represent both sides of the transform.
+    /// Resource to control a TLS client handshake.
     ///
-    /// The application side interacts with the cleartext "private" streams.
-    /// The network side interacts with the encrypted "public" streams.
+    /// See `client-connection` for more information.
+    resource client-handshake {
+        /// Configure the ALPN IDs for the client to adertise to the server,
+        /// in descending order of preference.
+        ///
+        /// By default, no ALPN IDs will be advertised.
+        configure-alpn-ids: func(value: list<alpn-id>) -> result;
+
+        // TODO: configure-protocol-versions: func(value: list<protocol-version>) -> result;
+        // TODO: configure-cipher-suites: func(value: list<cipher-suite>) -> result;
+
+
+        /// (Optional) Partially continue the handshake and verify the
+        /// certificate sent by the server.
+        ///
+        /// Can be called at most once per handshake. Also, this method fails if
+        /// the handshake has already progressed too far for this to be possible.
+        ///
+        /// The returned future is a child resources of the `client-handshake`.
+        ///
+        /// TODO: See `server-handshake::request-client-identity` for TODOs.
+        verify-server-identity: func() -> result<future-public-identity>;
+
+        /// (Optional) Partially continue the handshake and wait for the server
+        /// to send a client certificate request. The future resolves with:
+        /// - `some(client-identity-request)` if the server indeed requested a
+        ///    client certificate, or:
+        /// - `none` if the server progressed the handshake past the point where
+        ///    client authentication is possible.
+        ///
+        /// Can be called at most once per handshake. Also, this method fails if
+        /// the handshake has already progressed too far for this to be possible.
+        ///
+        /// The returned future and `client-identity-request` are child resources
+        /// of the `client-handshake`.
+        receive-client-identity-request: func() -> result<future-client-identity-request>;
+
+        /// Perform (the remainder of) the handshake. Future resolves when the
+        /// handshake has completed.
+        ///
+        /// The returned future is a child resource of the `client-connection`.
+        finish: static func(this: client-handshake) -> future-streams;
+
+        /// Cancel the handshake because of an error. The returned pollable
+        /// resolves when the error alert has been written out.
+        ///
+        /// The pollable is a child resource of the `client-connection`.
+        ///
+        /// TODO: add reason/errorcode parameter?
+        abort: static func(this: client-handshake) -> pollable;
+    }
+
+
+    /// A TLS server connection.
     ///
-    /// A typical setup looks something like this:
-    /// 
+    /// The various properties on this type become available as the handshake
+    /// progresses.
+    ///
+    /// # Design
+    /// TLS connections can be divided up into roughly two phases: the handshake
+    /// phase and the bulk data transfer phase. (TLS renegotiation is not exposed
+    /// in this interface.)
+    /// By far, most of the API complexity is in the handshake phase, which has
+    /// been split off into a separate `server-handshake` type. The
+    /// `server-handshake` is used to configure and control advanced (but optional)
+    /// operations such as deriving server settings from the client hello or
+    /// requesting and validating a client certificate.
+    /// Once the `server-handshake` has been set up appropriately, the handshake
+    /// can be completed using the `finish` method. That consumes the
+    /// `server-handshake` and gives a pair of cleartext streams back in return.
+    ///
+    /// The `server-connection` and its handshake resource don't not perform
+    /// any I/O on their own. It is a pure stream "wrapper" that consumes raw
+    /// TLS data streams and exposes cleartext streams.
+    /// The `input` and `output` parameters of constructor map to the
+    /// raw TLS data streams and are typically obtained from a WASI TCP socket.
+    /// The `server-handshake::finish` method returns the cleartext streams.
+    ///
+    /// ## Consumer drives the handshake
+    /// Many TLS libraries let users inject custom behavior at various points
+    /// of interest through the registration of callbacks.
+    /// The WebAssembly Component Model does not support callbacks. Instead, the
+    /// WASI TLS interface exposes direct-style APIs for the consumer to actively
+    /// drive the handshake forwards.
+    ///
+    /// The `server-handshake` starts out "suspended". The consumer then drives
+    /// the handshake to the next point of interest. For example using the
+    /// `receive-client-hello` method. Calling it:
+    /// - resumes the handshake,
+    /// - asynchronously waits for the client to send its hello message,
+    /// - upon receipt suspends the handshake again
+    /// - resolves the returned future.
+    /// It is then back up to the consumer to drive the handshake along to the
+    /// next point of interest (e.g. `request-client-identity`)
+    /// or finish the handshake entirely (`finish`).
+    ///
+    /// No data flows through the I/O streams while a server-handshake is suspended.
+    ///
+    /// # Usage
+    /// The general usage pattern looks like this:
+    /// - Construct a new connection using the `server-connection` constructor.
+    /// - Obtain the handshake resource using `server-connection::accept`. The
+    ///   handshake starts out suspended.
+    /// - (Optional) Configure the settings using the various
+    ///              `configure-*` methods. These may only be called while the
+    ///              handshake is suspended.
+    /// - (Optional) Resume the handshake and wait for the client to send its
+    ///              handshake using: `receive-client-hello`.
+    /// - (Optional) Further refine the settings based on the received
+    ///              client hello using the `configure-*` methods.
+    /// - (Optional) Resume the handshake by requesting a client certificate and
+    ///              waiting for it using: `request-client-identity`.
+    /// - Resume and run the handshake to completion using: `finish`.
+    /// - Read & write application data into the streams returned by `finish`.
+    ///
+    /// The optional steps must happen in the order as defined above.
+    ///
+    /// ## Example
+    /// A minimal, but production-ready, example in pseudocode:
     /// ```text
-    /// :    TCP Socket                              TLS Client/Server
-    /// +-----------------+            +---------------------------------------------+
-    /// |                 |   splice   |                 decryption                  |   read
-    /// |  `input-stream` | ========>> | `public-output` =========>> `private-input` | ======>>   your
-    /// |                 |            |                                             |            app
-    /// |                 |            |                                             |            lives
-    /// | `output-stream` | <<======== | `public-input` <<========= `private-output` | <<======   here
-    /// |                 |   splice   |                 encryption                  |   write
-    /// +-----------------+            +---------------------------------------------+
+    /// let my-identity = ...;
+    /// 
+    /// let conn = new server-connection(tcp-input, tcp-output);
+    /// let handshake = conn.accept();
+    /// handshake.configure-server-identities([my-identity]);
+    /// let (tls-input, tls-output) = handshake.finish().await?;
     /// ```
     ///
-    /// The user of this interface is responsible for continually forwarding
-    /// data from the socket into the `public-output` stream and
-    /// data from the `public-input` into the socket.
+    /// This assumes `tcp-input` and `tcp-output` are input/output streams
+    /// obtained from e.g. `tcp-socket::accept`.
     ///
-    /// # Caution
-    /// Because the guest acts as both the producer and the consumer for these
-    /// streams, do not use the `blocking_*` methods as that will deadlock yourself.
-    record io-streams {
-        public-input: input-stream,
-        public-output: output-stream,
-        private-output: output-stream,
-        private-input: input-stream,
-    }
+    /// # Secure by default
+    /// Implementations should pick reasonably safe defaults for all security
+    /// related settings. Users of this interface should be able to confidently
+    /// instantiate a new server connection and then, after configuring only the
+    /// server identity, immediately initiate the handshake. As demonstrated in
+    /// the example above.
+    resource server-connection {
+        // TODO: graceful shutdown
 
-    flags client-suspension-points {
-        /// When the client received the server's certificate.
-        verify-server-identity,
+        /// Create a new connection instance that wraps the provided
+        /// raw TLS data streams.
+        constructor(input: input-stream, output: output-stream);
 
-        /// When the client received a certificate request from the server.
-        select-client-identity,
+        /// Create a new server handshake. This method may be called at most once.
+        /// This method itself does not perform any I/O. Use the returned resource
+        /// to actually drive the handshake forwards.
+        ///
+        /// The returned `server-handshake` is a child resources of the `server-connection`.
+        accept: func() -> result<server-handshake>;
 
-        /// When the initial handshake was successful.
-        connected,
-    }
-
-    resource client-suspension {
-        /// At which point the TLS stream is suspended.
-        /// Exactly one flag is set in the return value.
-        at: func() -> client-suspension-points;
-
-        /// Only for select-client-identity:
-        // TODO: acceptable-authorities: func() -> result<list<string>>;
-        
-        /// Only for verify-server-identity:
-        // TODO: unverified-identity: func() -> result<public-identity>;
-    }
-
-    enum suspend-error {
-        not-ready,
-        already-suspended,
-        closed,
-    }
+        /// Request post-handshake authentication. See `server-handshake::request-client-identity`.
+        request-client-identity: func() -> result<future-public-identity>;
 
 
-
-
-
-
-
-
-
-    // TODO
-    resource server {
-        constructor(suspend-at: server-suspension-points);
-        streams: func() -> result<io-streams>;
-
-        configure-alpn-ids: func(value: list<alpn-id>) -> result;
-        configure-identities: func(value: list<borrow<private-identity>>) -> result;
-
+        /// The server name sent by the client or `none` if the client doesn't
+        /// support SNI.
         server-name: func() -> option<string>;
+
+        /// The negotiated ALPN ID, if any.
+        ///
+        /// Returns `none` when:
+        /// - the client did not advertise any ALPN IDs, or:
+        /// - there was no intersection between the IDs advertised by the client
+        ///   and the IDs supported by the server. 
         alpn-id: func() -> option<alpn-id>;
-        protocol-version: func() -> option<protocol-version>;
+
+        /// The client's identity accepted by the server, if any.
+        ///
+        /// Returns `none` when:
+        /// - the server did not request a client certificate,
+        /// - the server did request a client certificate, but the client didn't
+        ///   respond with a valid certificate.
         client-identity: func() -> option<public-identity>;
+
+        /// The certificate of the server.
+        /// This is one of the identities passed to `server-handshake::configure-server-identities`.
         server-identity: func() -> option<private-identity>;
 
-        suspend: func() -> result<server-suspension, suspend-error>;
-        resume: func() -> result;
+        /// The negotiated TLS protocol version.
+        protocol-version: func() -> option<protocol-version>;
+
+        /// The negotiated cipher suite.
+        cipher-suite: func() -> option<cipher-suite>;
+    }
+
+    /// Resource to control a TLS server handshake.
+    ///
+    /// See `server-connection` for more information.
+    resource server-handshake {
+
+        /// Configure which ALPN IDs the server is willing to accept from
+        /// the client, in descending order of preference.
+        configure-alpn-ids: func(value: list<alpn-id>) -> result;
+
+        /// Configure the server certificates, in descending order of preference.
+        ///
+        /// The TLS implementation will select the best match from this list
+        /// based on parameters submitted in the client hello. Not all of those
+        /// parameters may be exposed in the `client-hello` resource.
+        configure-server-identities: func(value: list<borrow<private-identity>>) -> result;
+
+        // TODO: configure-protocol-versions: func(value: list<protocol-version>) -> result;
+        // TODO: configure-cipher-suites: func(value: list<cipher-suite>) -> result;
+
+
+        /// (Optional) Partially continue the handshake and wait for the
+        /// ClientHello message to be received.
+        ///
+        /// Can be called at most once per handshake. Also, this method fails if
+        /// the handshake has already progressed too far for this to be possible.
+        ///
+        /// The returned future and `client-hello` are child resources of
+        /// the `server-handshake`.
+        receive-client-hello: func() -> result<future-client-hello>;
+
+        /// (Optional) Partially continue the handshake and request the client
+        /// to provide a certificate. Future resolves when the client's response
+        /// has been received and validated.
+        ///
+        /// Can be called at most once per handshake. Also, this method fails if
+        /// the handshake has already progressed too far for this to be possible.
+        ///
+        /// The returned future is a child resources of the `server-handshake`.
+        ///
+        /// TODO: custom set of root certificates
+        /// TODO: identity required true/false
+        /// TODO: Add ability to specify requirements such as: authorities, supported-signature-algorithms, oid-filters, ..
+        /// TODO: disable built-in validations (SSL_VERIFY_NONE). Should this still send the authorities?
+        request-client-identity: func() -> result<future-public-identity>;
+
+        /// Perform the remainder of the handshake. Future resolves when the
+        /// handshake has completed.
+        ///
+        /// The returned future is a child resource of the `server-connection`.
+        finish: static func(this: server-handshake) -> future-streams;
+
+        /// Cancel the handshake because of an error. The returned pollable
+        /// resolves when the error alert has been written out.
+        ///
+        /// The pollable is a child resource of the `server-connection`.
+        ///
+        /// TODO: add reason/errorcode parameter?
+        abort: static func(this: server-handshake) -> pollable;
+    }
+
+    resource client-hello {
+        // TODO: expose the requested TLS version(s)? TLS1.2 and lower only communicates the highest version. TLS1.3 and higher communicates an exact list of versions.
+
+        /// The server name sent by the client or `none` if the client doesn't
+        /// support SNI.
+        server-name: func() -> option<string>;
+
+        /// The ALPN IDs advertised by the client. Returns an empty list if the
+        /// client didn't provide any IDs or doesn't support ALPN.
+        alpn-ids: func() -> list<alpn-id>;
+
+        /// The supported cipher suites of the client.
+        cipher-suites: func() -> list<cipher-suite>;
+    }
+
+    /// Dropping the request is equivalent to offering no certificate.
+    resource client-identity-request {
+        // TODO: Add ability to get the requirements sent by the server. Such as: authorities, supported-signature-algorithms, oid-filters, ..
+
+        /// TODO
+        respond: static func(this: client-identity-request, identities: list<borrow<private-identity>>);
+    }
+
+
+
+
+
+
+
+
+
+    // Boilerplate:
+
+
+    /// `future<tuple<input-stream, output-stream>>`
+    resource future-streams {
         subscribe: func() -> pollable;
+        get: func() -> option<result<result<tuple<input-stream, output-stream>>>>;
     }
 
-    flags server-suspension-points {
-        /// When the server received the initial message from the client.
-        client-hello,
-
-        /// When the server received the client's certificate.
-        verify-client-identity,
-
-        /// When the initial handshake was successful.
-        accepted,
+    /// `future<client-hello>`
+    resource future-client-hello {
+        subscribe: func() -> pollable;
+        get: func() -> option<result<result<client-hello>>>;
     }
 
-    resource server-suspension {
-        at: func() -> server-suspension-points;
+    /// `future<option<public-identity>>`
+    resource future-public-identity {
+        subscribe: func() -> pollable;
+        get: func() -> option<result<result<option<public-identity>>>>;
+    }
 
-        /// Only for client-hello:
-        // TODO: requested-protocol-versions: func() -> result<list<protocol-version>>;
-        // TODO: requested-server-name: func() -> result<option<string>>;
-        // TODO: requested-alpn-ids: func() -> result<list<alpn-id>>;
-
-        /// Only for verify-client-identity:
-        // TODO: unverified-identity: func() -> result<public-identity>;
+    /// `future<option<client-identity-request>>`
+    resource future-client-identity-request {
+        subscribe: func() -> pollable;
+        get: func() -> option<result<result<option<client-identity-request>>>>;
     }
 }
