@@ -286,7 +286,7 @@ interface types {
         /// - <https://man.freebsd.org/cgi/man.cgi?query=listen&sektion=2>
         /// - <https://man.freebsd.org/cgi/man.cgi?query=accept&sektion=2>
         @since(version = 0.3.0)
-        listen: func() -> result<stream<tcp-socket>, error-code>;
+        listen: func() -> result<stream<result<tcp-socket, error-code>>, error-code>;
 
         /// Transmit data to peer.
         ///
